@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Thư viện của bên thứ ba đặt sẵn trong public/, không sửa nên không lint:
+    // file bundle đã minify, lint sẽ ra hàng trăm cảnh báo vô nghĩa.
+    "public/vendor/**",
   ]),
 ]);
 

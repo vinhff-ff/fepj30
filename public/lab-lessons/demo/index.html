@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Thí nghiệm: nhỏ giọt bằng cử chỉ tay</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: #0b1020; color: #e5e7eb;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
+      .stage { position: relative; width: 100vw; height: 100dvh; display: grid;
+        grid-template-columns: 1fr 18rem; }
+      .view { position: relative; overflow: hidden; }
+      /* Video làm nền, canvas đè lên cùng khu vực. Nếu để video flow bình
+         thường và canvas width/height 100% thì canvas bị đẩy xuống dưới
+         video, thành 2 ô camera chồng nhau. */
+      .view video, .view canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+      .view video { object-fit: cover; z-index: 0; }
+      .view canvas { object-fit: cover; z-index: 1; }
+      canvas { display: block; }
+      .side { padding: 1rem; overflow-y: auto; background: #111a33;
+        border-left: 1px solid #1f2937; }
+      .side h1 { font-size: 1.05rem; margin: 0 0 .35rem; }
+      .side p { font-size: .82rem; color: #9ca3af; margin: 0 0 .9rem; }
+      .goal { font-size: 2rem; font-weight: 700; margin: .5rem 0; }
+      .bar { height: 10px; border-radius: 999px; background: #1f2937; overflow: hidden; }
+      .bar__fill { height: 100%; width: 0%; background: linear-gradient(90deg,#3b82f6,#22c55e);
+        transition: width .2s ease; }
+      .status { margin-top: .9rem; font-size: .82rem; min-height: 1.2rem; }
+      .status--ok { color: #22c55e; }
+      .status--warn { color: #fbbf24; }
+      .status--err { color: #f87171; }
+      .equipped { list-style: none; margin: 1rem 0 0; padding: 0; font-size: .8rem; }
+      .equipped li { padding: .2rem 0; border-bottom: 1px solid #1f2937; color: #cbd5f5; }
+      .fallback { position: absolute; inset: 0; display: none; flex-direction: column;
+        align-items: center; justify-content: center; gap: .75rem; text-align: center;
+        padding: 2rem; background: #0b1020; }
+      .fallback--visible { display: flex; }
+      .fallback h2 { margin: 0; font-size: 1.1rem; }
+      .fallback p { margin: 0; max-width: 26rem; font-size: .85rem; color: #9ca3af; }
+      .spinner { width: 34px; height: 34px; border-radius: 50%;
+        border: 3px solid #1f2937; border-top-color: #3b82f6; animation: spin 1s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @media (max-width: 800px) {
+        .stage { grid-template-columns: 1fr; grid-template-rows: 60% 40%; }
+        .side { border-left: 0; border-top: 1px solid #1f2937; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <div class="view">
+        <video id="video" playsinline muted style="display:none"></video>
+        <canvas id="canvas"></canvas>
+
+        <div class="fallback" id="fallback">
+          <div class="spinner" id="spinner"></div>
+          <h2 id="fallbackTitle">Đang khởi tạo mô hình nhận dạng...</h2>
+          <p id="fallbackText">Lần đầu chạy có thể mất vài giây để tải mô hình.</p>
+        </div>
+      </div>
+
+      <aside class="side">
+        <h1>Nhỏ giọt vào cốc</h1>
+        <p>Chụm ngón cái và ngón trỏ lại gần nhau (như cầm pipette) và giữ để nhỏ giọt. Cần đủ 5 giọt thì hoàn thành.</p>
+
+        <div class="goal" id="goal">0 / 5 giọt</div>
+        <div class="bar"><div class="bar__fill" id="barFill"></div></div>
+
+        <div class="status" id="status"></div>
+        <ul class="equipped" id="equipped"></ul>
+      </aside>
+    </div>
+
+    <!-- SDK dùng chung: tự tải đồ đang mặc rồi mới gọi onReady -->
+    <script src="/lab-sdk.js"></script>
+    <!-- Bài học là HTML độc lập, không đi qua bundler của app -->
+    <script type="module">
+      // Thư viện MediaPipe nằm sẵn trong repo, không gọi CDN:
+      // bài học chạy được kể cả khi máy chủ/VPS bị chặn mạng ra ngoài.
+      const VISION_URL = "/vendor/tasks-vision/vision_bundle.mjs";
+      const WASM_URL = "/vendor/tasks-vision/wasm";
+
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const goalEl = document.getElementById("goal");
+      const barFill = document.getElementById("barFill");
+      const statusEl = document.getElementById("status");
+      const equippedEl = document.getElementById("equipped");
+      const fallback = document.getElementById("fallback");
+      const fallbackTitle = document.getElementById("fallbackTitle");
+      const fallbackText = document.getElementById("fallbackText");
+      const spinner = document.getElementById("spinner");
+
+      const TARGET_DROPS = 5;
+      let drops = 0;
+      let squeezing = false;
+      let finished = false;
+
+      function setStatus(text, kind) {
+        statusEl.textContent = text;
+        statusEl.className = "status" + (kind ? " status--" + kind : "");
+      }
+
+      function showFallback(title, text, spinnerVisible) {
+        fallbackTitle.textContent = title;
+        fallbackText.textContent = text;
+        spinner.style.display = spinnerVisible ? "block" : "none";
+        fallback.classList.add("fallback--visible");
+      }
+
+      function renderEquipped(items) {
+        equippedEl.innerHTML = "";
+        if (!items.length) {
+          const li = document.createElement("li");
+          li.textContent = "Bạn chưa mặc món đồ nào.";
+          equippedEl.appendChild(li);
+          return;
+        }
+        for (const item of items) {
+          const li = document.createElement("li");
+          li.textContent = `${item.name} (${item.slot})`;
+          equippedEl.appendChild(li);
+        }
+      }
+
+      // Chụm ngón cái + trỏ: khoảng cách nhỏ hơn ngưỡng và đủ gần camera
+      function isPinching(landmarks) {
+        const thumb = landmarks[4];
+        const index = landmarks[8];
+        if (!thumb || !index) return false;
+        const dx = thumb.x - index.x;
+        const dy = thumb.y - index.y;
+        return Math.hypot(dx, dy) < 0.055;
+      }
+
+      function updateDrops(pinching) {
+        if (pinching && !squeezing) {
+          squeezing = true;
+          drops = Math.min(TARGET_DROPS, drops + 1);
+          goalEl.textContent = `${drops} / ${TARGET_DROPS} giọt`;
+          barFill.style.width = `${(drops / TARGET_DROPS) * 100}%`;
+
+          if (drops >= TARGET_DROPS) {
+            finish();
+          } else {
+            setStatus(`Giọt ${drops}: nhả tay rồi nhỏ tiếp`, "ok");
+          }
+        } else if (!pinching && squeezing) {
+          squeezing = false;
+        }
+      }
+
+      function finish() {
+        if (finished) return;
+        finished = true;
+        const score = Math.round((drops / TARGET_DROPS) * 100);
+        setStatus("Hoàn thành! Đang gửi kết quả...", "ok");
+        LabSDK.complete({ score, drops, lesson: "demo" });
+      }
+
+      async function loadVision() {
+        try {
+          const vision = await import(VISION_URL);
+          return vision;
+        } catch (err) {
+          console.error("[demo] không tải được tasks-vision", err);
+          showFallback(
+            "Không tải được thư viện nhận dạng",
+            "Thiếu file /vendor/tasks-vision/vision_bundle.mjs. Hãy kiểm tra thư mục public/vendor trong dự án.",
+            false,
+          );
+          return null;
+        }
+      }
+
+      async function startCamera() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showFallback(
+            "Trình duyệt không hỗ trợ camera",
+            "Hãy dùng Chrome hoặc Edge phiên bản mới, và mở trang bằng HTTPS (camera cần secure context).",
+            false,
+          );
+          return null;
+        }
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user", width: 640, height: 480 },
+            audio: false,
+          });
+          video.srcObject = stream;
+          video.style.display = "block";
+          await video.play();
+          return stream;
+        } catch (err) {
+          const denied = err && (err.name === "NotAllowedError" || err.name === "SecurityError");
+          showFallback(
+            denied ? "Bạn chưa cho phép dùng camera" : "Không mở được camera",
+            denied
+              ? "Bấm biểu tượng cài đặt quyền ở thano địa chỉ rồi tải lại trang để thí nghiệm có thể dùng camera."
+              : "Hãy kiểm tra thiết bị có camera và không bị ứng dụng khác chiếm. " + (err && err.message ? err.message : ""),
+            false,
+          );
+          return null;
+        }
+      }
+
+      async function createLandmarkers(vision) {
+        const { FilesetResolver, HandLandmarker, FaceLandmarker } = vision;
+
+        let fileset;
+        try {
+          fileset = await FilesetResolver.forVisionTasks(WASM_URL);
+        } catch (err) {
+          console.error("[demo] không tải được wasm", err);
+          showFallback(
+            "Không tải được bộ phận xử lý hình ảnh",
+            "Thiếu thư mục /vendor/tasks-vision/wasm. Hãy kiểm tra thư mục public/vendor trong dự án.",
+            false,
+          );
+          return null;
+        }
+
+        // Model nằm sẵn trong /models nên không phụ thuộc CDN lúc chạy
+        let hand = null;
+        let face = null;
+
+        try {
+          hand = await HandLandmarker.createFromOptions(fileset, {
+            baseOptions: { modelAssetPath: "/models/hand_landmarker.task", delegate: "GPU" },
+            runningMode: "VIDEO",
+            numHands: 2,
+          });
+        } catch (err) {
+          console.error("[demo] lỗi model bàn tay", err);
+        }
+
+        try {
+          face = await FaceLandmarker.createFromOptions(fileset, {
+            baseOptions: { modelAssetPath: "/models/face_landmarker.task", delegate: "GPU" },
+            runningMode: "VIDEO",
+            numFaces: 1,
+          });
+        } catch (err) {
+          console.error("[demo] lỗi model khuôn mặt", err);
+        }
+
+        if (!hand && !face) {
+          showFallback(
+            "Không tải được mô hình nhận dạng",
+            "Kiểm tra lại các file trong thư mục public/models của dự án.",
+            false,
+          );
+          return null;
+        }
+
+        return { hand, face };
+      }
+
+      let lastVideoTime = -1;
+
+      function drawFrame(landmarker) {
+        const ctx = canvas.getContext("2d");
+        const width = video.videoWidth || 640;
+        const height = video.videoHeight || 480;
+
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+
+        // Lật ngang để người dùng thấy như soi gương, đồ vẽ theo cùng chiều
+        ctx.save();
+        ctx.translate(width, 0);
+        ctx.scale(-1, 1);
+
+        ctx.drawImage(video, 0, 0, width, height);
+
+        let hands = [];
+        let face = null;
+
+        if (video.currentTime !== lastVideoTime) {
+          lastVideoTime = video.currentTime;
+
+          if (landmarker.hand) {
+            const handResult = landmarker.hand.detectForVideo(video, performance.now());
+            hands = handResult.landmarks || [];
+          }
+
+          if (landmarker.face) {
+            const faceResult = landmarker.face.detectForVideo(video, performance.now());
+            face = faceResult.faceLandmarks && faceResult.faceLandmarks[0] ? faceResult.faceLandmarks[0] : null;
+          }
+        }
+
+        // Đồ đang mặc vẽ bằng SDK dùng chung, mọi bài đều giống nhau
+        LabSDK.drawAvatar(ctx, { face, hands });
+
+        ctx.restore();
+
+        if (hands.length > 0) {
+          updateDrops(isPinching(hands[0]));
+        } else {
+          updateDrops(false);
+          setStatus("Đưa tay vào khung hình để bắt đầu", "warn");
+        }
+
+        requestAnimationFrame(() => drawFrame(landmarker));
+      }
+
+      // Chỉ khởi tạo camera + model SAU khi SDK đã tải xong đồ
+      LabSDK.onReady(async function (equipped) {
+        renderEquipped(equipped);
+        fallback.classList.add("fallback--visible");
+
+        const vision = await loadVision();
+        if (!vision) return;
+
+        const stream = await startCamera();
+        if (!stream) return;
+
+        const landmarker = await createLandmarkers(vision);
+        if (!landmarker) return;
+
+        fallback.classList.remove("fallback--visible");
+        setStatus("Sẵn sàng. Chụm ngón cái và ngón trỏ để nhỏ giọt.", "ok");
+
+        drawFrame(landmarker);
+      });
+    </script>
+  </body>
+</html>
