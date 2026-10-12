@@ -5,6 +5,7 @@ const adminTabs = {
   users: "users",
   articles: "articles",
   coins: "coins",
+  social: "social",
   cart: "cart",
 } as const;
 
@@ -15,13 +16,14 @@ const adminPage = {
   description: "Trang điều hành và quản lý hệ thống dành cho Quản trị viên.",
   backHome: "Quay lại",
   tabs: {
-    overview: "Tổng quan thống kê",
-    rooms: "Quản lý phòng học",
-    lessons: "Quản lý bài học",
-    users: "Quản lý tài khoản",
-    articles: "Quản lý tin tức",
-    coins: "Quản lý Xu & Điểm danh",
-    cart: "Quản lý Giỏ hàng & Vật phẩm",
+    overview: "Tổng quan",
+    rooms: "Phòng học",
+    lessons: "Bài học",
+    users: "Tài khoản",
+    articles: "Tin tức",
+    coins: "Xu & Điểm danh",
+    social: "Fanpage",
+    cart: "Đơn hàng",
   } as Record<AdminTab, string>,
 
   roomPanel: {
@@ -66,6 +68,28 @@ const adminPage = {
     total: (total: number) => `Tổng số: ${total} tài khoản`,
     prev: "Trang trước",
     next: "Trang sau",
+  },
+  socialPanel: {
+    title: "Trang Fanpage / link-in-bio",
+    description:
+      "Mọi nội dung hiển thị tại /fanpage: hồ sơ, số liệu và link từng kênh mạng xã hội.",
+    profileTitle: "Hồ sơ thương hiệu",
+    statsTitle: "Hàng số liệu",
+    channelsTitle: "Danh sách kênh",
+    addChannel: "Thêm kênh",
+    removeChannel: "Xoá kênh",
+    markFeatured: "Đặt nổi bật",
+    unmarkFeatured: "Bỏ nổi bật",
+    openPage: "Mở trang Fanpage",
+    reset: "Tải lại",
+    save: "Lưu cấu hình",
+    empty: "Chưa có kênh nào trong cấu hình.",
+    confirmRemoveChannel: "Xoá kênh này khỏi trang Fanpage?",
+    loadFailed: "Không thể tải cấu hình Fanpage.",
+    saveFailed: "Lưu cấu hình Fanpage thất bại.",
+    saveSuccess: "Đã lưu cấu hình Fanpage thành công!",
+    updatedAt: (value?: string) =>
+      value ? `Cập nhật lần cuối: ${new Date(value).toLocaleString("vi-VN")}` : "Chưa có dữ liệu",
   },
   loading: "Đang tải dữ liệu quản trị...",
   forbidden: {

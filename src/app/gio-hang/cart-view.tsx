@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/modules/auth";
 import {
   getShopItems,
@@ -17,6 +18,7 @@ import "./cart.scss";
 
 export function CartView() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, updateCoins } = useAuth();
 
   const [items, setItems] = useState<ShopItem[]>([]);
@@ -64,9 +66,14 @@ export function CartView() {
   }, [selectedItem, showOrdersModal]);
 
   const handleOpenBuyModal = (item: ShopItem) => {
+    if (item.isOwned) {
+      toast.info("Bạn đã sở hữu vật phẩm này rồi, không thể mua lại nữa.");
+      return;
+    }
+
     if (!user) {
       toast.info("Vui lòng đăng nhập để thực hiện mua sắm.");
-      router.push("/login");
+      router.push("/login?next=/gio-hang");
       return;
     }
 
@@ -112,6 +119,14 @@ export function CartView() {
 
       // Thêm đơn hàng vào danh sách đơn của tôi
       setOrders((prev) => [res.order, ...prev]);
+
+      // Cập nhật trạng thái đã sở hữu cho sản phẩm này trong danh sách
+      setItems((prev) =>
+        prev.map((it) => (it.id === selectedItem.id ? { ...it, isOwned: true } : it))
+      );
+
+      // Làm mới dữ liệu Tủ đồ để cập nhật tức thì
+      void queryClient.invalidateQueries({ queryKey: ["inventory"] });
 
       toast.success(res.message);
       handleCloseBuyModal();
@@ -183,17 +198,24 @@ export function CartView() {
           <div className="cart-grid">
             {items.map((item) => {
               const canAfford = coins >= item.coinPrice;
+              const isOwned = Boolean(item.isOwned);
 
               return (
                 <div
                   key={item.id}
-                  className={`cart-shop-card ui-game-card ${item.isSpecial ? "cart-shop-card--special ui-game-card--special" : ""}`}
-                  onClick={() => handleOpenBuyModal(item)}
+                  className={`cart-shop-card ui-game-card ${item.isSpecial ? "cart-shop-card--special ui-game-card--special" : ""} ${isOwned ? "cart-shop-card--owned" : ""}`}
+                  onClick={() => {
+                    if (isOwned) {
+                      toast.info("Bạn đã sở hữu vật phẩm này rồi, không thể mua lại nữa.");
+                      return;
+                    }
+                    handleOpenBuyModal(item);
+                  }}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
-                      handleOpenBuyModal(item);
+                      if (!isOwned) handleOpenBuyModal(item);
                     }
                   }}
                 >
@@ -214,6 +236,11 @@ export function CartView() {
                         <span className="cart-shop-card__placeholder-text">Chưa có ảnh</span>
                       </div>
                     )}
+                    {isOwned && (
+                      <div className="cart-shop-card__owned-badge">
+                        <span>✓ ĐÃ SỞ HỮU</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Vùng thông tin sản phẩm */}
@@ -229,18 +256,29 @@ export function CartView() {
                         <span className="cart-card-price__val">{item.coinPrice} Xu</span>
                       </div>
 
-                      <button
-                        type="button"
-                        className={`cart-card-buy-btn ${item.isSpecial ? "cart-card-buy-btn--special" : ""} ${!canAfford ? "cart-card-buy-btn--disabled" : ""}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenBuyModal(item);
-                        }}
-                        disabled={!canAfford}
-                        title={!canAfford ? "Bạn không đủ xu" : "Nhấp để đổi vật phẩm này"}
-                      >
-                        {canAfford ? "Mua Ngay" : "Thiếu Xu"}
-                      </button>
+                      {isOwned ? (
+                        <button
+                          type="button"
+                          className="cart-card-buy-btn cart-card-buy-btn--owned"
+                          disabled
+                          title="Bạn đã sở hữu vật phẩm này rồi"
+                        >
+                          Đã sở hữu
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className={`cart-card-buy-btn ${item.isSpecial ? "cart-card-buy-btn--special" : ""} ${!canAfford ? "cart-card-buy-btn--disabled" : ""}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenBuyModal(item);
+                          }}
+                          disabled={!canAfford}
+                          title={!canAfford ? "Bạn không đủ xu" : "Nhấp để đổi vật phẩm này"}
+                        >
+                          {canAfford ? "Mua Ngay" : "Thiếu Xu"}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

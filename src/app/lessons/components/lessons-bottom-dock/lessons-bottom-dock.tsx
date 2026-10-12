@@ -4,11 +4,13 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/modules/auth";
+import { useRouter } from "next/navigation";
 import { getReceivedInvitations } from "@/modules/friends/services/friends.service";
 import { toast } from "@/components/ui/game-toast";
 import "./lessons-bottom-dock.scss";
 
 export function LessonsBottomDock() {
+  const router = useRouter();
   const { user } = useAuth();
   const coins = user?.coins ?? 0;
   const invitationsQuery = useQuery({
@@ -21,6 +23,11 @@ export function LessonsBottomDock() {
   const invitationCount = invitationsQuery.data?.length ?? 0;
 
   const handleCoinsClick = () => {
+    if (!user) {
+      toast.info("Vui lòng đăng nhập để nhận xu điểm danh!");
+      router.push("/login?next=/lessons");
+      return;
+    }
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("open-daily-reward"));
     }

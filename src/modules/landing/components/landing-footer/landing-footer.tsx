@@ -1,21 +1,4 @@
-import Link from "next/link";
-import { leftMenuItems, rightMenuItems } from "@/modules/landing/data/navigation";
-import type { MenuItem } from "@/modules/landing/types";
 import "./landing-footer.scss";
-
-const footerGroups: { id: string; title: string; items: MenuItem[] }[] = [
-  {
-    id: "kham-pha",
-    title: "Khám phá",
-    items: [...leftMenuItems, ...rightMenuItems],
-  },
-];
-
-const footerContacts = [
-  { id: "hotline", label: "Hotline", value: "1900 6868" },
-  { id: "email", label: "Email", value: "hotro@steamgame.vn" },
-  { id: "dia-chi", label: "Địa chỉ", value: "Số 1 Đường Lê Lợi, Quận 1, TP.HCM" },
-];
 
 function LandingFooter() {
   return (
@@ -35,36 +18,8 @@ function LandingFooter() {
 
       <footer className="landing-footer">
         <div className="landing-footer__inner">
-          {footerGroups.map((group) => (
-            <nav
-              className="landing-footer__group"
-              key={group.id}
-              aria-label={group.title}
-            >
-              <h2 className="landing-footer__group-title">{group.title}</h2>
-              <ul className="landing-footer__list">
-                {group.items.map((item) => (
-                  <li key={item.href}>
-                    <Link className="landing-footer__link" href={item.href}>
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          ))}
-
-          <div className="landing-footer__contacts">
-            {footerContacts.map((contact) => (
-              <div className="landing-footer__contact" key={contact.id}>
-                <span className="landing-footer__contact-label">{contact.label}</span>
-                <span className="landing-footer__contact-value">{contact.value}</span>
-              </div>
-            ))}
-          </div>
-
-          <p className="landing-footer__copyright">
-            © 2026 Steam Game Center. Giữ trọn mọi quyền thuộc về cộng đồng người chơi.
+          <p className="landing-footer__credit">
+            Dự án <strong>Whisker</strong> được tài trợ bởi dự án <strong>GenAct</strong> - Sáng kiến do <strong>UN Women Việt Nam</strong> phối hợp với <strong>TUVA Communication</strong> tổ chức, tìm kiếm và hỗ trợ các nhóm thanh niên phát triển các giải pháp số nhằm giải quyết những thách thức về bình đẳng giới, đặc biệt hướng tới phụ nữ và các nhóm yếu thế trong kỷ nguyên chuyển đổi số.
           </p>
         </div>
       </footer>

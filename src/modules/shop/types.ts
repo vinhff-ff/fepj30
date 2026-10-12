@@ -7,8 +7,16 @@ export interface ShopItem {
   isSpecial: boolean;
   stock: number | null;
   isActive: boolean;
+  isOwned?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AvailableAsset {
+  filename: string;
+  url: string;
+  slug: string;
+  name: string;
 }
 
 export interface ShopOrder {

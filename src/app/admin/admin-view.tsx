@@ -10,6 +10,7 @@ import { AdminRoomsPanel } from "./panels/admin-rooms-panel";
 import { AdminUsersPanel } from "./panels/admin-users-panel";
 import { AdminArticlesPanel } from "./panels/admin-articles-panel";
 import { AdminCoinsPanel } from "./panels/admin-coins-panel";
+import { AdminSocialPanel } from "./panels/admin-social-panel";
 import { AdminShopPanel } from "./panels/admin-shop-panel";
 import { adminPage, adminTabs } from "./admin.const";
 
@@ -216,7 +217,33 @@ function AdminView({ user, initialTab }: AdminViewProps) {
             <span className="admin-sidebar__item-text">{adminPage.tabs.coins}</span>
           </button>
 
-          {/* 6. Quản lý Giỏ hàng & Vật phẩm */}
+          {/* 6. Quản lý Fanpage */}
+          <button
+            type="button"
+            className={`admin-sidebar__item ${activeTab === adminTabs.social ? "admin-sidebar__item--active" : ""}`}
+            onClick={() => handleTabSelect(adminTabs.social)}
+          >
+            <svg
+              className="admin-sidebar__item-icon"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="6" cy="12" r="2.5" />
+              <circle cx="18" cy="6" r="2.5" />
+              <circle cx="18" cy="18" r="2.5" />
+              <line x1="8.2" y1="10.8" x2="15.8" y2="7.2" />
+              <line x1="8.2" y1="13.2" x2="15.8" y2="16.8" />
+            </svg>
+            <span className="admin-sidebar__item-text">{adminPage.tabs.social}</span>
+          </button>
+
+          {/* 7. Quản lý Giỏ hàng & Vật phẩm */}
           <button
             type="button"
             className={`admin-sidebar__item ${activeTab === adminTabs.cart ? "admin-sidebar__item--active" : ""}`}
@@ -328,6 +355,7 @@ function AdminView({ user, initialTab }: AdminViewProps) {
             {activeTab === adminTabs.users && <AdminUsersPanel currentUserId={user.id} />}
             {activeTab === adminTabs.articles && <AdminArticlesPanel />}
             {activeTab === adminTabs.coins && <AdminCoinsPanel />}
+            {activeTab === adminTabs.social && <AdminSocialPanel />}
             {activeTab === adminTabs.cart && <AdminShopPanel />}
           </div>
 

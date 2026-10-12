@@ -53,7 +53,15 @@ function isPathActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function isExternalMenuItem(item: MenuItem) {
+  return item.isExternal === true || /^https?:\/\//i.test(item.href);
+}
+
 function isMenuItemActive(item: MenuItem, pathname: string) {
+  if (isExternalMenuItem(item)) {
+    return false;
+  }
+
   if (item.isActive === true) {
     return pathname === item.href;
   }
@@ -84,6 +92,22 @@ function MenuItemLink({
     .join(" ");
 
   if (!hasChildren) {
+    if (isExternalMenuItem(item)) {
+      return (
+        <div className={itemClassName}>
+          <a
+            className="hero-header__menu-link"
+            href={item.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onNavigate}
+          >
+            {item.label}
+          </a>
+        </div>
+      );
+    }
+
     return (
       <div className={itemClassName}>
         <Link

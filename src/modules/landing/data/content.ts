@@ -7,66 +7,67 @@ interface FeatureItem {
 const steamFeatures: readonly FeatureItem[] = [
   {
     number: "01",
-    title: "Một thư viện duy nhất",
+    title: "HỌC QUA TRÒ CHƠI",
     description:
-      "Gom những trải nghiệm bạn yêu thích vào cùng một nơi để luôn sẵn sàng khám phá.",
+      "Mỗi bài học là một màn chơi, hiểu kiến thức mới mới vượt được thử thách.",
   },
   {
     number: "02",
-    title: "Sẵn sàng chơi ngay",
+    title: "TƯƠNG TÁC BẰNG ĐÔI TAY",
     description:
-      "Khởi động game nhanh, liên tục và tận hưởng khoảnh khắc bạn cần.",
+      "Dùng camera và hand tracking để thao tác trực tiếp, không cần chuột.",
   },
   {
     number: "03",
-    title: "Kết nối cộng đồng",
+    title: "NHẬN QUÀ & VẬT PHẨM",
     description:
-      "Chia sẻ hành trình, tìm bạn đồng hành và cùng nhau viết nên câu chuyện mới.",
+      "Hoàn thành bài học để nhận item, AI gắn thẳng lên khuôn mặt bạn.",
   },
 ];
 
 const missionPillars: readonly FeatureItem[] = [
   {
     number: "01",
-    title: "Gần gũi",
-    description: "Mọi trải nghiệm đều dễ tiếp cận, rõ ràng và thân thiện.",
+    title: "GẦN GŨI",
+    description:
+      "Bài học dễ hiểu, giao diện thân thiện, hợp lứa tuổi cấp 2.",
   },
   {
     number: "02",
-    title: "Đáng tin cậy",
-    description: "Chất lượng và sự an toàn luôn là tiêu chuẩn cho mỗi khoảnh khắc.",
+    title: "ĐÁNG TIN CẬY",
+    description: "Kiến thức chính xác, nội dung an toàn cho học sinh.",
   },
   {
     number: "03",
-    title: "Cùng nhau",
-    description: "Một cộng đồng đam mê là nơi mọi câu chuyện thực sự bắt đầu.",
+    title: "CÙNG NHAU",
+    description: "Học cùng bạn bè, so thành tích và chia sẻ phần thưởng.",
   },
 ];
 
 const teamGroups: readonly FeatureItem[] = [
   {
     number: "01",
-    title: "Đội ngũ sáng tạo",
+    title: "QUẢN LÝ",
     description:
-      "Biến những ý tưởng tách biệt thành thế giới giàu màu sắc và có chiều sâu.",
+      "Điều phối cả nhóm, giữ tiến độ và định hướng sản phẩm.",
   },
   {
     number: "02",
-    title: "Đội ngũ phát triển",
+    title: "TRUYỀN THÔNG",
     description:
-      "Xây dựng trải nghiệm ổn định, mượt mà để người chơi tập trung vào niềm vui.",
+      "Đưa sản phẩm đến học sinh, giáo viên và phụ huynh.",
   },
   {
     number: "03",
-    title: "Đội ngũ cộng đồng",
+    title: "Ý TƯỞNG",
     description:
-      "Lắng nghe, kết nối và đồng hành cùng cộng đồng trên từng hành trình.",
+      "Biến kiến thức khô khan thành màn chơi và phần thưởng hấp dẫn.",
   },
   {
     number: "04",
-    title: "Đội ngũ vận hành",
+    title: "TRIỂN KHAI",
     description:
-      "Giữ mọi trải nghiệm luôn minh bạch, an toàn và sẵn sàng cho hành trình tiếp theo.",
+      "Xây dựng hand tracking, AI nhận diện mặt và toàn bộ hệ thống.",
   },
 ];
 

@@ -121,12 +121,8 @@ export function GenderPieChart({ stats, isLoading = false }: GenderPieChartProps
     <div className="admin-gender-stats-card">
       <div className="admin-gender-stats-card__header">
         <div className="admin-gender-stats-card__title-wrap">
-          <span className="admin-gender-stats-card__icon">📊</span>
-          <h3 className="admin-gender-stats-card__title">THỐNG KÊ GIỚI TÍNH NGƯỜI DÙNG</h3>
+          <h3 className="admin-gender-stats-card__title">THỐNG KÊ GIỚI TÍNH</h3>
         </div>
-        <span className="admin-gender-stats-card__badge">
-          Biểu đồ tròn (Chart.js)
-        </span>
       </div>
 
       <div className="admin-gender-stats-card__body">
@@ -134,7 +130,7 @@ export function GenderPieChart({ stats, isLoading = false }: GenderPieChartProps
         <div className="admin-gender-stats-card__chart-col">
           {isLoading ? (
             <div className="admin-gender-stats-card__loading">
-              <span>⏳ Đang tải biểu đồ...</span>
+              <span>Đang tải...</span>
             </div>
           ) : (
             <div className="admin-gender-stats-card__canvas-box">
@@ -148,10 +144,8 @@ export function GenderPieChart({ stats, isLoading = false }: GenderPieChartProps
           <div className="admin-gender-metric admin-gender-metric--total">
             <div className="admin-gender-metric__top">
               <span className="admin-gender-metric__label">TỔNG TÀI KHOẢN</span>
-              <span className="admin-gender-metric__icon">👥</span>
             </div>
             <div className="admin-gender-metric__value">{total}</div>
-            <div className="admin-gender-metric__sub">100% người dùng hệ thống</div>
           </div>
 
           <div className="admin-gender-metric-grid">
@@ -159,7 +153,6 @@ export function GenderPieChart({ stats, isLoading = false }: GenderPieChartProps
             <div className="admin-gender-metric admin-gender-metric--male">
               <div className="admin-gender-metric__top">
                 <span className="admin-gender-metric__label">NAM</span>
-                <span className="admin-gender-metric__icon">👨</span>
               </div>
               <div className="admin-gender-metric__value">
                 {stats?.male ?? 0}
@@ -171,7 +164,6 @@ export function GenderPieChart({ stats, isLoading = false }: GenderPieChartProps
             <div className="admin-gender-metric admin-gender-metric--female">
               <div className="admin-gender-metric__top">
                 <span className="admin-gender-metric__label">NỮ</span>
-                <span className="admin-gender-metric__icon">👩</span>
               </div>
               <div className="admin-gender-metric__value">
                 {stats?.female ?? 0}
@@ -183,7 +175,6 @@ export function GenderPieChart({ stats, isLoading = false }: GenderPieChartProps
             <div className="admin-gender-metric admin-gender-metric--other">
               <div className="admin-gender-metric__top">
                 <span className="admin-gender-metric__label">KHÁC</span>
-                <span className="admin-gender-metric__icon">🌈</span>
               </div>
               <div className="admin-gender-metric__value">
                 {stats?.other ?? 0}
@@ -195,7 +186,6 @@ export function GenderPieChart({ stats, isLoading = false }: GenderPieChartProps
             <div className="admin-gender-metric admin-gender-metric--unspecified">
               <div className="admin-gender-metric__top">
                 <span className="admin-gender-metric__label">CHƯA RÕ</span>
-                <span className="admin-gender-metric__icon">❓</span>
               </div>
               <div className="admin-gender-metric__value">
                 {stats?.unspecified ?? 0}

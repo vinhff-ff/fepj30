@@ -1,7 +1,6 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Form,
@@ -19,8 +18,10 @@ import type { ColumnsType } from "antd/es/table";
 import {
   DeleteOutlined,
   EditOutlined,
+  EyeOutlined,
   PlusOutlined,
   SearchOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import {
   createArticle,
@@ -31,16 +32,6 @@ import {
   type NewsArticle,
   type NewsCategory,
 } from "@/modules/news";
-
-const IMAGE_PRESETS = [
-  { label: "Phòng STEAM 3D", url: "/images/news-steam-lab.jpg" },
-  { label: "Thám hiểm Karst", url: "/images/news-expedition.jpg" },
-  { label: "Đại hội Đền Đình", url: "/images/news-festival.jpg" },
-  { label: "Trống Đồng & Núi", url: "/images/bgm21.jpg" },
-  { label: "Sông Nước Cổ", url: "/images/bgm22.jpg" },
-  { label: "Bầu Trời Tinh Tú", url: "/images/bgm23.jpg" },
-  { label: "Gốm Men & Làng Nghề", url: "/images/bgm24.jpg" },
-];
 
 function slugify(text: string): string {
   return text
@@ -64,7 +55,12 @@ export function AdminArticlesPanel() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<NewsArticle | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [coverImageUrl, setCoverImageUrl] = useState<string>("");
   const [form] = Form.useForm();
+
+  // Modal chỉ xem chi tiết bài viết
+  const [viewingArticle, setViewingArticle] = useState<NewsArticle | null>(null);
 
   // Load articles
   async function loadArticles() {
@@ -95,16 +91,51 @@ export function AdminArticlesPanel() {
     });
   }, [articles, categoryFilter, searchFilter]);
 
+  // Xử lý tải ảnh từ máy tính (lưu Base64)
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      message.error("Vui lòng chọn tệp định dạng hình ảnh (PNG, JPG, WEBP, SVG...).");
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      message.error("Kích thước ảnh vượt quá 15MB. Vui lòng chọn ảnh nhẹ hơn.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64String = event.target?.result as string;
+      setCoverImageUrl(base64String);
+      form.setFieldValue("coverImage", base64String);
+      message.success("Đã chọn ảnh bìa thành công (lưu Base64)!");
+    };
+    reader.onerror = () => {
+      message.error("Không thể đọc file ảnh.");
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleClearImage = () => {
+    setCoverImageUrl("");
+    form.setFieldValue("coverImage", "");
+  };
+
   // Mở modal tạo mới
   const handleOpenCreateModal = () => {
     setEditingArticle(null);
     form.resetFields();
+    setCoverImageUrl("");
     form.setFieldsValue({
       category: "TIN TỨC",
       author: "Ban Biên Tập",
       authorRole: "Chuyên gia Khảo cứu",
       readTime: "5 phút đọc",
-      coverImage: "/images/news-steam-lab.jpg",
+      coverImage: "",
       featured: false,
       hot: false,
       tier: 3,
@@ -117,6 +148,7 @@ export function AdminArticlesPanel() {
   const handleOpenEditModal = (article: NewsArticle) => {
     setEditingArticle(article);
     form.resetFields();
+    setCoverImageUrl(article.coverImage || "");
     form.setFieldsValue({
       title: article.title,
       slug: article.slug,
@@ -124,7 +156,7 @@ export function AdminArticlesPanel() {
       author: article.author,
       authorRole: article.authorRole,
       readTime: article.readTime,
-      coverImage: article.coverImage,
+      coverImage: article.coverImage || "",
       excerpt: article.excerpt,
       content: article.content,
       featured: article.featured,
@@ -148,6 +180,8 @@ export function AdminArticlesPanel() {
             .filter(Boolean)
         : [];
 
+      const finalCover = coverImageUrl.trim() || values.coverImage?.trim() || undefined;
+
       const payload: CreateArticlePayload = {
         title: values.title.trim(),
         slug: values.slug.trim(),
@@ -155,7 +189,7 @@ export function AdminArticlesPanel() {
         author: values.author.trim(),
         authorRole: values.authorRole.trim(),
         readTime: values.readTime.trim(),
-        coverImage: values.coverImage.trim(),
+        coverImage: finalCover,
         excerpt: values.excerpt.trim(),
         content: values.content.trim(),
         featured: Boolean(values.featured),
@@ -210,7 +244,13 @@ export function AdminArticlesPanel() {
       width: 75,
       render: (img: string, record) => (
         <div style={{ width: 50, height: 38, position: "relative", borderRadius: 4, overflow: "hidden", border: "1px solid #e2e8f0" }}>
-          <Image src={img || "/images/news-steam-lab.jpg"} alt={record.title} fill sizes="50px" style={{ objectFit: "cover" }} unoptimized />
+          {img ? (
+            <img src={img} alt={record.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", fontSize: 10, color: "#94a3b8" }}>
+              Chưa có ảnh
+            </div>
+          )}
         </div>
       ),
     },
@@ -230,13 +270,7 @@ export function AdminArticlesPanel() {
       dataIndex: "category",
       key: "category",
       width: 130,
-      render: (cat: string) => {
-        let color = "blue";
-        if (cat === "KHÁM PHÁ") color = "gold";
-        if (cat === "SỰ KIỆN") color = "magenta";
-        if (cat === "HƯỚNG DẪN") color = "cyan";
-        return <Tag color={color} style={{ fontWeight: 700 }}>{cat}</Tag>;
-      },
+      render: (cat: string) => <Tag>{cat}</Tag>,
     },
     {
       title: "Tác giả",
@@ -254,11 +288,11 @@ export function AdminArticlesPanel() {
       title: "Cấp hiển thị",
       dataIndex: "tier",
       key: "tier",
-      width: 145,
+      width: 130,
       render: (tier: number = 3) => {
-        if (tier === 1) return <Tag color="red" style={{ fontWeight: 800 }}>⭐ CẤP 1 (Lớn nhất)</Tag>;
-        if (tier === 2) return <Tag color="blue" style={{ fontWeight: 700 }}>📌 CẤP 2 (Bên cạnh)</Tag>;
-        return <Tag color="default" style={{ fontWeight: 600 }}>📄 CẤP 3 (Dưới cùng)</Tag>;
+        if (tier === 1) return <Tag>Cấp 1</Tag>;
+        if (tier === 2) return <Tag>Cấp 2</Tag>;
+        return <Tag>Cấp 3</Tag>;
       },
     },
     {
@@ -267,8 +301,8 @@ export function AdminArticlesPanel() {
       width: 130,
       render: (_, record) => (
         <Space size={4} wrap>
-          {record.featured && <Tag color="volcano">NỔI BẬT</Tag>}
-          {record.hot && <Tag color="red">HOT</Tag>}
+          {record.featured && <Tag>Nổi bật</Tag>}
+          {record.hot && <Tag>Hot</Tag>}
           {!record.featured && !record.hot && <span style={{ color: "#94a3b8" }}>—</span>}
         </Space>
       ),
@@ -287,10 +321,17 @@ export function AdminArticlesPanel() {
     {
       title: "Thao tác",
       key: "actions",
-      width: 140,
+      width: 200,
       fixed: "right",
       render: (_, record) => (
         <Space size="small">
+          <Button
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => setViewingArticle(record)}
+          >
+            Xem
+          </Button>
           <Button
             type="primary"
             ghost
@@ -321,9 +362,6 @@ export function AdminArticlesPanel() {
     <div className="admin-table-container">
       <div className="admin-table-container__header">
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <h3 className="admin-table-container__title">
-            Danh sách bài viết tin tức ({articles.length})
-          </h3>
           <Select
             value={categoryFilter}
             onChange={setCategoryFilter}
@@ -337,11 +375,11 @@ export function AdminArticlesPanel() {
             ]}
           />
           <Input
-            placeholder="Tìm kiếm bài viết..."
+            placeholder="Tìm bài viết..."
             prefix={<SearchOutlined />}
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            style={{ width: 220 }}
+            style={{ width: 320 }}
             allowClear
           />
         </div>
@@ -354,7 +392,7 @@ export function AdminArticlesPanel() {
             onClick={handleOpenCreateModal}
             size="middle"
           >
-            Thêm mới bài viết
+            Thêm
           </Button>
         </div>
       </div>
@@ -376,41 +414,45 @@ export function AdminArticlesPanel() {
 
       {/* MODAL ANTD: THÊM MỚI / CHỈNH SỬA BÀI VIẾT */}
       <Modal
-        title={editingArticle ? `Chỉnh sửa bài viết: ${editingArticle.title}` : "Thêm mới bài viết tin tức"}
+        title={editingArticle ? "Sửa bài viết" : "Thêm bài viết"}
         open={isModalOpen}
         onOk={handleModalSubmit}
         onCancel={() => setIsModalOpen(false)}
         confirmLoading={isSubmitting}
-        okText={editingArticle ? "Cập nhật" : "Xuất bản"}
+        okText="Lưu"
         cancelText="Hủy"
-        width={760}
+        width={920}
+        style={{ top: 24 }}
+        styles={{ body: { padding: "16px 24px 24px" } }}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item
-            name="title"
-            label="Tiêu đề bài viết"
-            rules={[{ required: true, message: "Vui lòng nhập tiêu đề bài viết" }]}
-          >
-            <Input
-              placeholder="Ví dụ: Lễ hội Khám phá STEAM Cổ truyền..."
-              onChange={(e) => {
-                if (!editingArticle) {
-                  form.setFieldValue("slug", slugify(e.target.value));
-                }
-              }}
-            />
-          </Form.Item>
+        <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
+            <Form.Item
+              name="title"
+              label="Tiêu đề"
+              rules={[{ required: true, message: "Vui lòng nhập tiêu đề bài viết" }]}
+            >
+              <Input
+                placeholder="Tiêu đề bài viết..."
+                onChange={(e) => {
+                  if (!editingArticle) {
+                    form.setFieldValue("slug", slugify(e.target.value));
+                  }
+                }}
+              />
+            </Form.Item>
 
-          <Form.Item
-            name="slug"
-            label="Đường dẫn tĩnh (Slug)"
-            rules={[{ required: true, message: "Vui lòng nhập slug" }]}
-          >
-            <Input placeholder="le-hoi-kham-pha-steam-co-truyen" />
-          </Form.Item>
+            <Form.Item
+              name="slug"
+              label="Đường dẫn (Slug)"
+              rules={[{ required: true, message: "Vui lòng nhập slug" }]}
+            >
+              <Input placeholder="duong-dan-bai-viet" />
+            </Form.Item>
+          </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
             <Form.Item
               name="category"
               label="Chuyên mục"
@@ -418,10 +460,10 @@ export function AdminArticlesPanel() {
             >
               <Select
                 options={[
-                  { value: "TIN TỨC", label: "TIN TỨC" },
-                  { value: "KHÁM PHÁ", label: "KHÁM PHÁ" },
-                  { value: "SỰ KIỆN", label: "SỰ KIỆN" },
-                  { value: "HƯỚNG DẪN", label: "HƯỚNG DẪN" },
+                  { value: "TIN TỨC", label: "Tin tức" },
+                  { value: "KHÁM PHÁ", label: "Khám phá" },
+                  { value: "SỰ KIỆN", label: "Sự kiện" },
+                  { value: "HƯỚNG DẪN", label: "Hướng dẫn" },
                 ]}
               />
             </Form.Item>
@@ -429,9 +471,9 @@ export function AdminArticlesPanel() {
             <Form.Item
               name="author"
               label="Tác giả"
-              rules={[{ required: true, message: "Vui lòng nhập tên tác giả" }]}
+              rules={[{ required: true, message: "Vui lòng nhập tác giả" }]}
             >
-              <Input placeholder="Ban Biên Tập" />
+              <Input placeholder="Tác giả..." />
             </Form.Item>
 
             <Form.Item
@@ -443,84 +485,179 @@ export function AdminArticlesPanel() {
             </Form.Item>
           </div>
 
-          <Form.Item
-            name="coverImage"
-            label="Ảnh bìa bài viết (URL)"
-            rules={[{ required: true, message: "Vui lòng nhập ảnh bìa" }]}
-          >
-            <Input placeholder="/images/... hoặc https://..." />
-          </Form.Item>
+          <Form.Item label="Ảnh bìa">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleImageFileChange}
+            />
 
-          <div style={{ marginBottom: 14 }}>
-            <span style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 6 }}>
-              Ảnh gợi ý có sẵn:
-            </span>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {IMAGE_PRESETS.map((p) => (
-                <Tag
-                  key={p.url}
-                  color="blue"
-                  style={{ cursor: "pointer" }}
-                  onClick={() => form.setFieldValue("coverImage", p.url)}
+            <Space direction="vertical" style={{ width: "100%" }} size="middle">
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <Button
+                  type="dashed"
+                  icon={<UploadOutlined />}
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ flex: 1 }}
                 >
-                  {p.label}
-                </Tag>
-              ))}
-            </div>
-          </div>
+                  Tải ảnh lên
+                </Button>
+                {coverImageUrl && (
+                  <Button danger icon={<DeleteOutlined />} onClick={handleClearImage}>
+                    Gỡ ảnh
+                  </Button>
+                )}
+              </div>
+
+              {coverImageUrl ? (
+                <div
+                  style={{
+                    position: "relative",
+                    borderRadius: 6,
+                    border: "1px dashed #cbd5e1",
+                    padding: 12,
+                    background: "#f8fafc",
+                    textAlign: "center",
+                  }}
+                >
+                  <img
+                    src={coverImageUrl}
+                    alt="Xem trước ảnh bìa"
+                    style={{
+                      maxHeight: 220,
+                      maxWidth: "100%",
+                      borderRadius: 4,
+                      objectFit: "contain",
+                    }}
+                  />
+                </div>
+              ) : null}
+
+              <Form.Item name="coverImage" noStyle>
+                <Input
+                  placeholder="Hoặc dán URL ảnh / chuỗi Data Base64..."
+                  value={coverImageUrl}
+                  onChange={(e) => setCoverImageUrl(e.target.value)}
+                />
+              </Form.Item>
+            </Space>
+          </Form.Item>
 
           <Form.Item
             name="excerpt"
-            label="Đoạn tóm tắt ngắn (Excerpt)"
+            label="Tóm tắt"
             rules={[{ required: true, message: "Vui lòng nhập tóm tắt bài viết" }]}
           >
-            <Input.TextArea rows={2} placeholder="Tóm tắt ngắn gọn hiển thị ngoài danh sách tin..." />
+            <Input.TextArea rows={2} placeholder="Tóm tắt ngắn gọn..." />
           </Form.Item>
 
           <Form.Item
             name="content"
-            label="Nội dung bài viết"
+            label="Nội dung"
             rules={[{ required: true, message: "Vui lòng nhập nội dung bài viết" }]}
           >
-            <Input.TextArea rows={5} placeholder="Nội dung chi tiết của bài viết..." />
+            <Input.TextArea rows={8} placeholder="Nội dung chi tiết của bài viết..." />
           </Form.Item>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
             <Form.Item
               name="tier"
-              label="Cấp hiển thị (Tier)"
-              tooltip="Cấp 1: Bài lớn nhất; Cấp 2: Bài bên cạnh (tối đa 5 bài); Cấp 3: Bài dưới cùng. Khi gán Cấp 1, bài Cấp 1 hiện tại sẽ tự động bị đẩy xuống Cấp 2. Nếu Cấp 2 quá 5 bài sẽ tự động đẩy xuống Cấp 3."
+              label="Cấp hiển thị"
             >
               <Select
                 options={[
-                  { value: 1, label: "⭐ Cấp 1 (Bài lớn nhất)" },
-                  { value: 2, label: "📌 Cấp 2 (Bên cạnh, max 5)" },
-                  { value: 3, label: "📄 Cấp 3 (Dưới cùng)" },
+                  { value: 1, label: "Cấp 1" },
+                  { value: 2, label: "Cấp 2" },
+                  { value: 3, label: "Cấp 3" },
                 ]}
               />
             </Form.Item>
 
             <Form.Item
               name="featured"
-              label="Đánh dấu NỔI BẬT"
+              label="Nổi bật"
               valuePropName="checked"
             >
-              <Switch checkedChildren="BẬT" unCheckedChildren="TẮT" />
+              <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
             </Form.Item>
 
             <Form.Item
               name="hot"
-              label="Đánh dấu HOT"
+              label="Hot"
               valuePropName="checked"
             >
-              <Switch checkedChildren="BẬT" unCheckedChildren="TẮT" />
+              <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
             </Form.Item>
           </div>
 
-          <Form.Item name="tagsString" label="Thẻ bài viết (Tags, cách nhau bằng dấu phẩy)">
-            <Input placeholder="STEAM, Khảo cứu, Văn hóa" />
+          <Form.Item name="tagsString" label="Thẻ (Tags)">
+            <Input placeholder="STEAM, Khảo cứu..." />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* MODAL CHỈ XEM NỘI DUNG BÀI VIẾT (READ-ONLY) */}
+      <Modal
+        title="Chi tiết bài viết"
+        open={Boolean(viewingArticle)}
+        onCancel={() => setViewingArticle(null)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setViewingArticle(null)}>
+            Đóng
+          </Button>,
+        ]}
+        width={750}
+      >
+        {viewingArticle && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 12 }}>
+            {viewingArticle.coverImage && (
+              <div style={{ width: "100%", height: 220, borderRadius: 6, overflow: "hidden", border: "1px solid #e2e8f0" }}>
+                <img src={viewingArticle.coverImage} alt={viewingArticle.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+            )}
+            <div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
+                <Tag>{viewingArticle.category}</Tag>
+                {viewingArticle.featured && <Tag color="blue">Nổi bật</Tag>}
+                {viewingArticle.hot && <Tag color="red">Hot</Tag>}
+                <span style={{ fontSize: 12, color: "#64748b" }}>Tác giả: {viewingArticle.author}</span>
+                <span style={{ fontSize: 12, color: "#94a3b8" }}>• {viewingArticle.readTime}</span>
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a" }}>{viewingArticle.title}</div>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Đường dẫn: /{viewingArticle.slug}</div>
+            </div>
+
+            {viewingArticle.excerpt && (
+              <div style={{ padding: "10px 14px", background: "#f8fafc", borderLeft: "3px solid #2563eb", borderRadius: "0 6px 6px 0", fontSize: 13.5, fontStyle: "italic", color: "#475569" }}>
+                {viewingArticle.excerpt}
+              </div>
+            )}
+
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
+                Nội dung bài viết:
+              </div>
+              <div
+                style={{
+                  maxHeight: 300,
+                  overflowY: "auto",
+                  padding: 12,
+                  background: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 6,
+                  fontSize: 13.5,
+                  lineHeight: 1.6,
+                  color: "#1e293b",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {viewingArticle.content}
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

@@ -840,7 +840,6 @@ $news-font-game: var(--font-game, "Baloo 2"), system-ui, sans-serif;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
-  border-top: 3px solid $news-text;
   border-left: 1.5px solid $news-border-strong;
 
   @media (max-width: 1024px) {

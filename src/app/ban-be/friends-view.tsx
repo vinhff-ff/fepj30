@@ -55,7 +55,7 @@ function FriendsPage() {
   useEffect(() => {
     if (isAuthLoading) return;
     if (!user) {
-      router.replace("/login");
+      router.replace("/login?next=/ban-be");
       return;
     }
 

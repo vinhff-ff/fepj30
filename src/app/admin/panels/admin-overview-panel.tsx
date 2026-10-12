@@ -76,9 +76,6 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
       <div className="admin-overview-panel__header">
         <div className="admin-overview-panel__header-left">
           <h2 className="admin-overview-panel__title">TỔNG QUAN HỆ THỐNG</h2>
-          <p className="admin-overview-panel__subtitle">
-            Báo cáo thống kê toàn diện về người dùng, bài học cả 4 lớp, tin tức và đơn hàng đặc biệt.
-          </p>
         </div>
         <div className="admin-overview-panel__header-right">
           <Button
@@ -87,7 +84,7 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
             onClick={() => void loadStats()}
             loading={isLoading}
           >
-            Làm mới số liệu
+            Làm mới
           </Button>
         </div>
       </div>
@@ -95,7 +92,7 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
       {isLoading && !stats ? (
         <div className="admin-overview-panel__loading">
           <Spin size="large" />
-          <span style={{ marginTop: 12, color: "#64748b" }}>Đang tải dữ liệu thống kê...</span>
+          <span style={{ marginTop: 12, color: "#64748b" }}>Đang tải dữ liệu...</span>
         </div>
       ) : (
         <div className="admin-overview-panel__content">
@@ -107,19 +104,18 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
                 <div className="admin-metric-card__icon-box">
                   <TeamOutlined />
                 </div>
-                <Tag color="blue" className="admin-metric-card__tag">Hệ thống</Tag>
               </div>
               <div className="admin-metric-card__content">
                 <div className="admin-metric-card__value">{totalUsers}</div>
                 <div className="admin-metric-card__label">Tổng số người dùng</div>
                 <div className="admin-metric-card__breakdown">
-                  <span title="Nam">👨 Nam: <strong>{stats?.gender.male ?? 0}</strong></span>
+                  <span>Nam: <strong>{stats?.gender.male ?? 0}</strong></span>
                   <span className="admin-metric-card__sep">•</span>
-                  <span title="Nữ">👩 Nữ: <strong>{stats?.gender.female ?? 0}</strong></span>
+                  <span>Nữ: <strong>{stats?.gender.female ?? 0}</strong></span>
                   {(stats?.gender.other ?? 0) > 0 && (
                     <>
                       <span className="admin-metric-card__sep">•</span>
-                      <span title="Khác">🌈 Khác: <strong>{stats?.gender.other}</strong></span>
+                      <span>Khác: <strong>{stats?.gender.other}</strong></span>
                     </>
                   )}
                 </div>
@@ -132,14 +128,10 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
                 <div className="admin-metric-card__icon-box">
                   <ReadOutlined />
                 </div>
-                <Tag color="orange" className="admin-metric-card__tag">Bài viết</Tag>
               </div>
               <div className="admin-metric-card__content">
                 <div className="admin-metric-card__value">{totalArticles}</div>
-                <div className="admin-metric-card__label">Bài tin tức đã đăng</div>
-                <div className="admin-metric-card__sub">
-                  Đã xuất bản & hiển thị công khai trên cổng tin tức
-                </div>
+                <div className="admin-metric-card__label">Bài tin tức</div>
               </div>
             </div>
 
@@ -149,14 +141,10 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
                 <div className="admin-metric-card__icon-box">
                   <BookOutlined />
                 </div>
-                <Tag color="green" className="admin-metric-card__tag">Cả 4 lớp</Tag>
               </div>
               <div className="admin-metric-card__content">
                 <div className="admin-metric-card__value">{totalLessons}</div>
-                <div className="admin-metric-card__label">Tổng số bài học đã tạo</div>
-                <div className="admin-metric-card__sub">
-                  Phân bố trên {lessonsByRoom.length} phòng học (Lớp 6, 7, 8, 9)
-                </div>
+                <div className="admin-metric-card__label">Tổng số bài học</div>
               </div>
             </div>
 
@@ -166,18 +154,17 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
                 <div className="admin-metric-card__icon-box">
                   <GiftOutlined />
                 </div>
-                <Tag color="purple" className="admin-metric-card__tag">Quà đặc biệt</Tag>
               </div>
               <div className="admin-metric-card__content">
                 <div className="admin-metric-card__value">{specialOrdersCount}</div>
-                <div className="admin-metric-card__label">Đơn hàng đặc biệt đã gửi đi</div>
+                <div className="admin-metric-card__label">Đơn hàng đặc biệt</div>
                 <div className="admin-metric-card__breakdown">
-                  <span title="Chờ duyệt" style={{ color: "#d97706" }}>
-                    ⏳ Chờ duyệt: <strong>{specialOrdersPending}</strong>
+                  <span>
+                    Chờ duyệt: <strong>{specialOrdersPending}</strong>
                   </span>
                   <span className="admin-metric-card__sep">•</span>
-                  <span title="Đã hoàn tất" style={{ color: "#059669" }}>
-                    ✓ Hoàn tất: <strong>{specialOrdersCompleted}</strong>
+                  <span>
+                    Hoàn tất: <strong>{specialOrdersCompleted}</strong>
                   </span>
                 </div>
               </div>
@@ -196,48 +183,47 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
                 <div className="admin-overview-subcard">
                   <div className="admin-overview-subcard__header">
                     <div className="admin-overview-subcard__title-wrap">
-                      <GiftOutlined style={{ fontSize: 18, color: "#8b5cf6" }} />
+                      <GiftOutlined style={{ fontSize: 18, color: "#2563eb" }} />
                       <h3 className="admin-overview-subcard__title">
                         CHI TIẾT ĐƠN HÀNG ĐẶC BIỆT
                       </h3>
                     </div>
-                    <Tag color="purple">Phê duyệt & Vận chuyển</Tag>
                   </div>
                   <div className="admin-overview-subcard__body">
                     <div className="admin-special-order-stats">
                       <div className="admin-special-stat-item">
                         <div className="admin-special-stat-item__label">
-                          <GiftOutlined style={{ marginRight: 6, color: "#8b5cf6" }} />
+                          <GiftOutlined style={{ marginRight: 6, color: "#2563eb" }} />
                           Tổng đơn đặc biệt
                         </div>
-                        <div className="admin-special-stat-item__num" style={{ color: "#7c3aed" }}>
+                        <div className="admin-special-stat-item__num" style={{ color: "#2563eb" }}>
                           {specialOrdersCount}
                         </div>
                       </div>
 
                       <div className="admin-special-stat-item">
                         <div className="admin-special-stat-item__label">
-                          <ClockCircleOutlined style={{ marginRight: 6, color: "#f59e0b" }} />
-                          Chờ Admin duyệt
+                          <ClockCircleOutlined style={{ marginRight: 6, color: "#475569" }} />
+                          Chờ duyệt
                         </div>
-                        <div className="admin-special-stat-item__num" style={{ color: "#d97706" }}>
+                        <div className="admin-special-stat-item__num" style={{ color: "#0f172a" }}>
                           {specialOrdersPending}
                         </div>
                       </div>
 
                       <div className="admin-special-stat-item">
                         <div className="admin-special-stat-item__label">
-                          <CheckCircleOutlined style={{ marginRight: 6, color: "#10b981" }} />
-                          Đã gửi / Hoàn tất
+                          <CheckCircleOutlined style={{ marginRight: 6, color: "#2563eb" }} />
+                          Đã hoàn tất
                         </div>
-                        <div className="admin-special-stat-item__num" style={{ color: "#059669" }}>
+                        <div className="admin-special-stat-item__num" style={{ color: "#2563eb" }}>
                           {specialOrdersCompleted}
                         </div>
                       </div>
 
                       <div className="admin-special-stat-item">
                         <div className="admin-special-stat-item__label">
-                          <ShoppingOutlined style={{ marginRight: 6, color: "#3b82f6" }} />
+                          <ShoppingOutlined style={{ marginRight: 6, color: "#2563eb" }} />
                           Tổng toàn bộ đơn
                         </div>
                         <div className="admin-special-stat-item__num" style={{ color: "#2563eb" }}>
@@ -248,16 +234,12 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
 
                     <div style={{ marginTop: 18 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13, color: "#475569" }}>
-                        <span>Tiến độ xử lý đơn đặc biệt</span>
-                        <strong>{specialCompletedPercent}% hoàn tất</strong>
+                        <span>Tiến độ hoàn tất</span>
+                        <strong>{specialCompletedPercent}%</strong>
                       </div>
                       <Progress
                         percent={specialCompletedPercent}
-                        strokeColor={{
-                          "0%": "#8b5cf6",
-                          "100%": "#10b981",
-                        }}
-                        status={specialOrdersPending > 0 ? "active" : "normal"}
+                        strokeColor="#2563eb"
                       />
                     </div>
                   </div>
@@ -272,12 +254,11 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
                 <div className="admin-overview-subcard">
                   <div className="admin-overview-subcard__header">
                     <div className="admin-overview-subcard__title-wrap">
-                      <BookOutlined style={{ fontSize: 18, color: "#10b981" }} />
+                      <BookOutlined style={{ fontSize: 18, color: "#2563eb" }} />
                       <h3 className="admin-overview-subcard__title">
-                        BÀI HỌC ĐÃ TẠO CHO CẢ 4 LỚP
+                        BÀI HỌC THEO PHÒNG
                       </h3>
                     </div>
-                    <Tag color="green">Tổng {totalLessons} bài học</Tag>
                   </div>
                   <div className="admin-overview-subcard__body">
                     {lessonsByRoom.length === 0 ? (
@@ -309,15 +290,7 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
                               <Progress
                                 percent={percent}
                                 size="small"
-                                strokeColor={
-                                  index === 0
-                                    ? "#3b82f6"
-                                    : index === 1
-                                    ? "#10b981"
-                                    : index === 2
-                                    ? "#f59e0b"
-                                    : "#8b5cf6"
-                                }
+                                strokeColor="#2563eb"
                               />
                             </div>
                           );
@@ -326,7 +299,7 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
                     )}
 
                     <div className="admin-room-lesson-summary">
-                      <span>Tổng bài học toàn bộ 4 lớp:</span>
+                      <span>Tổng cộng:</span>
                       <strong>{totalLessons} bài</strong>
                     </div>
                   </div>
@@ -337,9 +310,8 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
                   <div className="admin-overview-subcard">
                     <div className="admin-overview-subcard__header">
                       <div className="admin-overview-subcard__title-wrap">
-                        <span style={{ fontSize: 18 }}>⚡</span>
                         <h3 className="admin-overview-subcard__title">
-                          TRUY CẬP NHANH CHỨC NĂNG
+                          TRUY CẬP NHANH
                         </h3>
                       </div>
                     </div>
@@ -350,8 +322,8 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
                           className="admin-quick-btn"
                           onClick={() => onNavigateTab("lessons")}
                         >
-                          <BookOutlined style={{ color: "#10b981", fontSize: 16 }} />
-                          <span>Quản lý bài học</span>
+                          <BookOutlined style={{ color: "#2563eb", fontSize: 16 }} />
+                          <span>Bài học</span>
                           <ArrowRightOutlined className="admin-quick-btn__arrow" />
                         </button>
                         <button
@@ -359,8 +331,8 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
                           className="admin-quick-btn"
                           onClick={() => onNavigateTab("users")}
                         >
-                          <UserOutlined style={{ color: "#3b82f6", fontSize: 16 }} />
-                          <span>Quản lý tài khoản</span>
+                          <UserOutlined style={{ color: "#2563eb", fontSize: 16 }} />
+                          <span>Tài khoản</span>
                           <ArrowRightOutlined className="admin-quick-btn__arrow" />
                         </button>
                         <button
@@ -368,8 +340,8 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
                           className="admin-quick-btn"
                           onClick={() => onNavigateTab("articles")}
                         >
-                          <ReadOutlined style={{ color: "#f59e0b", fontSize: 16 }} />
-                          <span>Quản lý tin tức</span>
+                          <ReadOutlined style={{ color: "#2563eb", fontSize: 16 }} />
+                          <span>Tin tức</span>
                           <ArrowRightOutlined className="admin-quick-btn__arrow" />
                         </button>
                         <button
@@ -377,8 +349,8 @@ export function AdminOverviewPanel({ onNavigateTab }: AdminOverviewPanelProps) {
                           className="admin-quick-btn"
                           onClick={() => onNavigateTab("cart")}
                         >
-                          <GiftOutlined style={{ color: "#8b5cf6", fontSize: 16 }} />
-                          <span>Quản lý đơn hàng & vật phẩm</span>
+                          <GiftOutlined style={{ color: "#2563eb", fontSize: 16 }} />
+                          <span>Đơn hàng</span>
                           <ArrowRightOutlined className="admin-quick-btn__arrow" />
                         </button>
                       </div>

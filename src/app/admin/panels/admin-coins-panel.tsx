@@ -118,15 +118,14 @@ export function AdminCoinsPanel() {
       title: "Tài khoản",
       dataIndex: "username",
       key: "username",
-      render: (username: string) => <span style={{ fontWeight: 700 }}>{username}</span>,
+      render: (username: string) => <span style={{ fontWeight: 600 }}>{username}</span>,
     },
     {
       title: "Vai trò",
       dataIndex: "role",
       key: "role",
       width: 130,
-      render: (role: string) =>
-        role === "ADMIN" ? <Tag color="red">ADMIN</Tag> : <Tag color="blue">MEMBER</Tag>,
+      render: (role: string) => <Tag>{role}</Tag>,
     },
     {
       title: "Số xu hiện có",
@@ -135,7 +134,7 @@ export function AdminCoinsPanel() {
       width: 150,
       sorter: (a, b) => a.coins - b.coins,
       render: (coins: number) => (
-        <span style={{ fontWeight: 800, color: "#b45309" }}>🪙 {coins.toLocaleString("vi-VN")} Xu</span>
+        <span>{coins.toLocaleString("vi-VN")} xu</span>
       ),
     },
     {
@@ -168,7 +167,7 @@ export function AdminCoinsPanel() {
             setAdjustAmount(10);
           }}
         >
-          Điều chỉnh xu
+          Sửa xu
         </Button>
       ),
     },
@@ -177,34 +176,28 @@ export function AdminCoinsPanel() {
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", gap: 20 }}>
       {/* 1. CẤU HÌNH ĐIỂM DANH */}
-      <div style={{ background: "#fff", border: "1px solid #e2e8f0", padding: "20px 24px", borderRadius: 4 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", padding: "16px 20px", borderRadius: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 12 }}>
           <div>
-            <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700 }}>
-              Cấu hình chuỗi Điểm danh Hàng ngày (7 Ngày)
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>
+              Điểm danh 7 ngày
             </h3>
-            <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>
-              Người dùng đăng nhập điểm danh liên tiếp mỗi ngày sẽ nhận được số xu tương ứng.
-            </p>
           </div>
 
-          <Space size="middle">
-            <Space>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>Tính năng điểm danh:</span>
-              <Switch
-                checked={config.enabled}
-                onChange={(checked) => setConfig((prev) => ({ ...prev, enabled: checked }))}
-                checkedChildren="BẬT"
-                unCheckedChildren="TẮT"
-              />
-            </Space>
+          <Space size="middle" align="center">
+            <Switch
+              checked={config.enabled}
+              onChange={(checked) => setConfig((prev) => ({ ...prev, enabled: checked }))}
+              checkedChildren="Bật"
+              unCheckedChildren="Tắt"
+            />
             <Button
               type="primary"
               icon={<SaveOutlined />}
               onClick={handleSaveConfig}
               loading={isSavingConfig}
             >
-              Lưu cấu hình 7 ngày
+              Lưu
             </Button>
           </Space>
         </div>
@@ -215,16 +208,16 @@ export function AdminCoinsPanel() {
               key={idx}
               style={{
                 padding: "10px",
-                background: idx === 6 ? "#fefce8" : "#f8fafc",
-                border: idx === 6 ? "1px solid #facc15" : "1px solid #e2e8f0",
-                borderRadius: 4,
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: 6,
                 display: "flex",
                 flexDirection: "column",
                 gap: 6,
               }}
             >
-              <span style={{ fontSize: 12, fontWeight: 700, color: idx === 6 ? "#854d0e" : "#475569" }}>
-                {idx === 6 ? "Ngày 7 (Đặc biệt) 👑" : `Ngày ${idx + 1} 🪙`}
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>
+                Ngày {idx + 1}
               </span>
               <InputNumber
                 min={0}
@@ -242,19 +235,16 @@ export function AdminCoinsPanel() {
       <div className="admin-table-container">
         <div className="admin-table-container__header">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <h3 className="admin-table-container__title">
-              Quản lý xu từng tài khoản ({users.length})
-            </h3>
             <Input
-              placeholder="Tìm theo tên đăng nhập..."
+              placeholder="Tìm tên đăng nhập..."
               prefix={<SearchOutlined />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onPressEnter={() => loadData(search)}
-              style={{ width: 220 }}
+              style={{ width: 320 }}
               allowClear
             />
-            <Button onClick={() => loadData(search)}>Tìm kiếm</Button>
+            <Button onClick={() => loadData(search)}>Tìm</Button>
           </div>
         </div>
 
@@ -280,18 +270,18 @@ export function AdminCoinsPanel() {
         onOk={handleConfirmAdjust}
         onCancel={() => setAdjustingUser(null)}
         confirmLoading={isAdjusting}
-        okText="Xác nhận điều chỉnh"
+        okText="Lưu"
         cancelText="Hủy"
-        width={420}
+        width={400}
       >
         <div style={{ padding: "12px 0" }}>
           <p style={{ margin: "0 0 12px", fontSize: 14 }}>
-            Số xu hiện có: <strong style={{ color: "#ca8a04" }}>{adjustingUser?.coins} Xu</strong>
+            Số dư hiện tại: <strong>{adjustingUser?.coins} xu</strong>
           </p>
           <Form layout="vertical">
             <Form.Item
-              label="Số xu muốn cộng hoặc trừ"
-              extra="Nhập số dương (ví dụ: 50) để cộng xu, nhập số âm (ví dụ: -20) để trừ xu."
+              label="Số lượng xu"
+              extra="Số dương để cộng (+), số âm để trừ (-)"
             >
               <InputNumber
                 value={adjustAmount}

@@ -1,6 +1,7 @@
 import paperMap from "../../../../../public/images/pappermap.png";
 import missionImage from "../../../../../public/images/bgm23.jpg";
 import hoatiet from "../../../../../public/images/hoatiet.png";
+import { BRAND_NAME } from "../../constants";
 import { missionPillars, steamFeatures, teamGroups } from "../../data/content";
 import "./about-sections.scss";
 
@@ -21,26 +22,25 @@ function AboutSections() {
           <div className="landing-about__heading">
             <div>
               <h2 className="landing-about__title" id="steam-title">
-                Steam là gì?
+                {BRAND_NAME} LÀ GÌ?
               </h2>
               <p className="landing-about__description">
-                Steam là nền tảng phân phối trò chơi của Valve — nơi người
-                chơi khám phá, mua và tận hưởng những trải nghiệm game trong
-                cùng một thư viện.
+                Học {BRAND_NAME} qua trò chơi dành cho học sinh cấp 2, nơi kiến
+                thức mới trở thành thử thách để chơi, khám phá và nhận quà.
               </p>
             </div>
           </div>
 
           <div className="landing-about__steam-layout">
             <article className="landing-about__steam-card">
-              <span className="landing-about__card-label">STEAM / NỀN TẢNG</span>
+              <span className="landing-about__card-label">{BRAND_NAME} / NỀN TẢNG</span>
               <p className="landing-about__steam-card-copy">
-                Một nơi để bạn tìm thấy những thế giới mới, giữ lại kỷ niệm cũ
-                và luôn có một hành trình tiếp theo để khám phá.
+                Một nơi để các bạn khám phá kiến thức mới, tự tay thực hành và
+                luôn có thử thách tiếp theo đang chờ.
               </p>
               <div className="landing-about__steam-status">
                 <span className="landing-about__status-dot" />
-                <span>Khám phá · Kết nối · Chơi</span>
+                <span>KHÁM PHÁ · THỰC HÀNH · NHẬN QUÀ</span>
               </div>
             </article>
 
@@ -72,12 +72,12 @@ function AboutSections() {
             <div className="landing-about__heading">
               <div>
                 <h2 className="landing-about__title" id="mission-title">
-                  Sứ mệnh của chúng tôi
+                  SỨ MỆNH CỦA CHÚNG TÔI
                 </h2>
                 <p className="landing-about__description">
-                  Chúng tôi muốn biến mỗi lần mở game thành một hành trình có
-                  nghĩa, nơi mọi người có thể tìm thấy niềm vui, sự kết nối và
-                  một lý do để quay lại.
+                  Chúng tôi muốn biến mỗi bài học {BRAND_NAME} thành một hành
+                  trình vui, nơi học sinh dám thử, dám sai và có lý do để quay
+                  lại.
                 </p>
               </div>
             </div>
@@ -86,12 +86,12 @@ function AboutSections() {
               <article className="landing-about__mission-statement">
                 <span className="landing-about__card-label">CAM KẾT CỦA CHÚNG TÔI</span>
                 <p className="landing-about__mission-quote">
-                  “Tạo nên một nơi mà mọi người có thể đến để chơi, học hỏi và cùng
-                  nhau viết nên những câu chuyện đáng nhớ.”
+                  “Tạo nên một nơi mà học sinh được chơi, được học và tự tin khám
+                  phá khoa học bằng chính đôi tay của mình.”
                 </p>
                 <div className="landing-about__mission-seal">
-                  <strong>STEAM</strong>
-                  <span>PLAY / CONNECT / GROW</span>
+                  <strong>{BRAND_NAME}</strong>
+                  <span>— PLAY / LEARN / GROW</span>
                 </div>
               </article>
 
@@ -113,11 +113,11 @@ function AboutSections() {
             <div className="landing-about__heading">
               <div>
                 <h2 className="landing-about__title" id="team-title">
-                  Đội ngũ của chúng tôi
+                  ĐỘI NGŨ CỦA CHÚNG TÔI
                 </h2>
                 <p className="landing-about__description">
-                  Chúng tôi là những người yêu game, yêu công nghệ và yêu những
-                  câu chuyện được cùng khám phá.
+                  Nhóm 4 người yêu giáo dục, yêu công nghệ và muốn việc học trở
+                  nên thú vị hơn.
                 </p>
               </div>
             </div>

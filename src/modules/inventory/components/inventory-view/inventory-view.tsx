@@ -195,6 +195,9 @@ function InventoryView({
     async function startCamera() {
       preloadFaceLandmarker();
       try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("Trình duyệt chỉ cho phép bật Camera qua HTTPS hoặc localhost.");
+        }
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "user" },
           audio: false,
@@ -293,6 +296,11 @@ function InventoryView({
 
   const handleItemClick = useCallback(
     (item: CatalogItem) => {
+      if (!owned.has(item.id)) {
+        toast.error("Bạn chưa sở hữu món đồ này. Hãy mua tại Cửa hàng để trang bị!");
+        return;
+      }
+
       const wasEquipped = equippedMap[item.slot] === item.id;
 
       if (!wasEquipped && (item.id === 'chuotuser-hole' || item.id === 'chuotuser')) {
@@ -314,7 +322,7 @@ function InventoryView({
         equip.mutate(item.id);
       }
     },
-    [equippedMap, equip, toggleEquipped, unequip],
+    [equippedMap, equip, toggleEquipped, unequip, owned],
   );
 
   const itemById = useMemo(
@@ -331,14 +339,14 @@ function InventoryView({
   const leftColRef = useRef<HTMLDivElement>(null);
   const probeRef = useRef<HTMLButtonElement>(null);
 
-  // Chỉ hiện đồ trong tủ, theo thứ tự mũ → kính → áo → quần rồi tới tên.
+  // Chỉ hiện đồ người chơi ĐÃ MUA / SỞ HỮU trong DB (bảng userItem)
   const ownedItems = useMemo(() => {
     const order = new Map<string, number>(
       slotOrder.map((slot, index) => [slot, index]),
     );
 
     return items
-      .filter((item) => owned.has(item.id) || item.slot === "hat" || item.slot === "glasses" || item.slot === "mask" || item.id === 'chuotuser-hole' || item.id === 'chuotuser')
+      .filter((item) => owned.has(item.id))
       .sort(
         (a, b) =>
           (order.get(a.slot) ?? 99) - (order.get(b.slot) ?? 99) ||
@@ -392,7 +400,7 @@ function InventoryView({
   const rightItems =
     isNarrow || perColumn === null ? [] : ownedItems.slice(perColumn);
 
-  if (isLoading || catalogQuery.isLoading || inventoryQuery.isLoading) {
+  if (isLoading || catalogQuery.isLoading || (Boolean(user) && inventoryQuery.isLoading)) {
     return (
       <div className="inventory-retro">
         <LoadingState />
@@ -639,9 +647,25 @@ function InventoryView({
             })}
 
           {ownedItems.length === 0 && (
-            <p className="inventory-retro__empty">
-              Tủ đồ còn trống. Mua thêm trang bị ở cửa hàng để mặc lên camera.
-            </p>
+            <div className="inventory-retro__empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "20px 12px", textAlign: "center" }}>
+              <span>🎒 Tủ đồ của bạn đang trống. Bạn chưa sở hữu trang bị nào!</span>
+              <Link
+                href="/gio-hang"
+                style={{
+                  display: "inline-block",
+                  padding: "8px 16px",
+                  background: "linear-gradient(180deg, #22c55e 0%, #15803d 100%)",
+                  color: "#ffffff",
+                  borderRadius: 6,
+                  fontWeight: 800,
+                  fontSize: 13,
+                  textDecoration: "none",
+                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.25)",
+                }}
+              >
+                🛒 Ghé Cửa Hàng
+              </Link>
+            </div>
           )}
         </div>
 

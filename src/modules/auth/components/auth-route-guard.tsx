@@ -15,7 +15,13 @@ export function AuthRouteGuard({ children }: AuthRouteGuardProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const isPublic = pathname === "/" || pathname.startsWith("/login") || pathname.startsWith("/admin");
+  const isPublic =
+    pathname === "/" ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/lessons") ||
+    pathname.startsWith("/tin-tuc") ||
+    pathname.startsWith("/fanpage");
 
   useEffect(() => {
     if (!isLoading && !token && !user && !isPublic) {

@@ -6,6 +6,9 @@ import { useEffect, useState } from "react";
 import type { User, UserGroupInfo } from "@/modules/auth/types";
 import { getMyOrders, type ShopOrder } from "@/modules/shop";
 import { getMyGroup } from "@/modules/friends";
+import { useAuth } from "@/modules/auth";
+import { getInventory, useCatalog, type Inventory } from "@/modules/inventory";
+import { LoadingState } from "@/components/ui";
 import { AvatarEditor } from "./avatar-editor/avatar-editor";
 import {
   InboxOutlined,
@@ -16,25 +19,53 @@ import {
 } from "@ant-design/icons";
 
 interface ProfileViewProps {
-  user: User;
+  initialUser?: User | null;
+  user?: User;
 }
 
 type ProfileTab = "inventory" | "orders" | "info";
 
-export function ProfileView({ user }: ProfileViewProps) {
+export function ProfileView({ initialUser, user: propUser }: ProfileViewProps) {
+  const { user: authUser } = useAuth();
+  const user = propUser ?? initialUser ?? authUser;
+
   const [activeTab, setActiveTab] = useState<ProfileTab>("inventory");
-  const [group, setGroup] = useState<UserGroupInfo | null>(user.group ?? null);
+  const [group, setGroup] = useState<UserGroupInfo | null>(user?.group ?? null);
+
+  const catalogQuery = useCatalog();
+  const [inventory, setInventory] = useState<Inventory | null>(null);
+  const [isLoadingInventory, setIsLoadingInventory] = useState(false);
 
   // State đơn hàng
   const [orders, setOrders] = useState<ShopOrder[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
-  // Sản phẩm thường đã mua -> Trang bị; Sản phẩm đặc biệt -> Trạng thái đơn hàng
-  const regularItems = orders.filter((ord) => !ord.isSpecial && ord.status !== "CANCELLED");
+  // Sản phẩm đặc biệt -> Trạng thái đơn hàng
   const specialOrders = orders.filter((ord) => ord.isSpecial);
 
-  // Load orders and group
+  // Danh sách trang bị người dùng đã mua trong DB (bảng userItem)
+  const catalogItems = catalogQuery.data ?? [];
+  const ownedSet = new Set(inventory?.owned ?? []);
+  const equippedSet = new Set(inventory?.equipped ?? []);
+
+  const myOwnedEquipments = catalogItems.filter((it) => ownedSet.has(it.id));
+
+  // Load inventory, orders and group
   useEffect(() => {
+    if (!user) return;
+
+    async function loadInventory() {
+      setIsLoadingInventory(true);
+      try {
+        const inv = await getInventory();
+        setInventory(inv);
+      } catch {
+        // Ignore error
+      } finally {
+        setIsLoadingInventory(false);
+      }
+    }
+
     async function loadOrders() {
       setIsLoadingOrders(true);
       try {
@@ -48,6 +79,7 @@ export function ProfileView({ user }: ProfileViewProps) {
     }
 
     async function loadGroup() {
+      if (!user) return;
       try {
         const myGroup = await getMyGroup();
         if (myGroup) {
@@ -65,9 +97,18 @@ export function ProfileView({ user }: ProfileViewProps) {
       }
     }
 
+    void loadInventory();
     void loadOrders();
     void loadGroup();
-  }, [user.id]);
+  }, [user?.id]);
+
+  if (!user) {
+    return (
+      <div className="profile-page-root">
+        <LoadingState />
+      </div>
+    );
+  }
 
   // Format giới tính hiển thị
   const genderDisplay =
@@ -185,60 +226,67 @@ export function ProfileView({ user }: ProfileViewProps) {
           {/* C. NỘI DUNG TỪNG TRANG THEO TAB ĐƯỢC CHỌN */}
           <div className="profile-tab-content">
             {/* ---------------------------------------------------- */}
-            {/* TAB 1: TRANG BỊ (SẢN PHẨM THƯỜNG ĐÃ MUA)            */}
+            {/* TAB 1: TRANG BỊ ĐÃ MUA TRONG DB (USER_ITEMS)         */}
             {/* ---------------------------------------------------- */}
             {activeTab === "inventory" && (
               <div className="profile-inventory-panel">
-                {isLoadingOrders ? (
+                {isLoadingInventory || catalogQuery.isLoading ? (
                   <div className="profile-empty-state">
                     <span className="profile-empty-state__icon">⏳</span>
                     <p className="profile-empty-state__text">Đang tải danh sách trang bị...</p>
                   </div>
-                ) : regularItems.length === 0 ? (
+                ) : myOwnedEquipments.length === 0 ? (
                   <div className="profile-empty-state">
                     <span className="profile-empty-state__icon">🎒</span>
                     <p className="profile-empty-state__text">
-                      Bạn chưa sở hữu trang bị nào từ cửa hàng.
+                      Bạn chưa sở hữu trang bị nào trong tủ đồ.
                     </p>
                     <p style={{ fontSize: "13px", color: "#785a43", margin: "4px 0 0" }}>
-                      Tích lũy xu từ các bài học để sắm thêm các trang bị độc đáo!
+                      Hãy dùng xu tích lũy để sắm thêm các trang bị độc đáo tại Cửa hàng!
                     </p>
                   </div>
                 ) : (
                   <div className="profile-inventory-grid">
-                    {regularItems.map((ord) => (
-                      <div key={ord.id} className="profile-inventory-slot">
-                        <div className="profile-inventory-slot__img-wrap">
-                          {ord.item?.imageUrl ? (
-                            <Image
-                              src={ord.item.imageUrl}
-                              alt={ord.item.name || "Vật phẩm"}
-                              width={56}
-                              height={56}
-                              className="profile-inventory-slot__img"
-                              unoptimized
-                            />
-                          ) : (
-                            <span className="profile-inventory-slot__icon">🎁</span>
-                          )}
+                    {myOwnedEquipments.map((item) => {
+                      const isEquipped = equippedSet.has(item.id);
+                      return (
+                        <div key={item.id} className="profile-inventory-slot">
+                          <div className="profile-inventory-slot__img-wrap">
+                            {item.imageUrl ? (
+                              <Image
+                                src={item.imageUrl}
+                                alt={item.name || "Vật phẩm"}
+                                width={56}
+                                height={56}
+                                className="profile-inventory-slot__img"
+                                unoptimized
+                              />
+                            ) : (
+                              <span className="profile-inventory-slot__icon">🎁</span>
+                            )}
+                          </div>
+                          <span className="profile-inventory-slot__name">
+                            {item.name || "Vật phẩm"}
+                          </span>
+                          <span
+                            className="profile-inventory-slot__status"
+                            style={{
+                              background: isEquipped ? "#22c55e" : "#e2e8f0",
+                              color: isEquipped ? "#ffffff" : "#475569",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {isEquipped ? "✓ Đang mặc" : "Đã sở hữu"}
+                          </span>
                         </div>
-                        <span className="profile-inventory-slot__name">
-                          {ord.item?.name || "Vật phẩm"}
-                        </span>
-                        <span className="profile-inventory-slot__price">
-                          🪙 {ord.coinPrice.toLocaleString("vi-VN")} Xu
-                        </span>
-                        <span className="profile-inventory-slot__status">
-                          ✓ Đã sở hữu
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
                 <div className="profile-inventory-panel__cta">
                   <Link href="/inventory" className="profile-game-btn profile-game-btn--primary">
-                    <span>🎮 Thử Đồ 3D</span>
+                    <span>🎮 Thử Đồ / Tủ Đồ</span>
                   </Link>
                   <Link href="/gio-hang" className="profile-game-btn profile-game-btn--secondary">
                     <span>🛒 Ghé Cửa Hàng</span>

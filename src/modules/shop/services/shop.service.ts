@@ -2,6 +2,7 @@ import { api } from "@/lib/api/client";
 import type { ApiResponse } from "@/types/api";
 import type {
   AdminOrdersResponse,
+  AvailableAsset,
   CreateShopItemPayload,
   PurchasePayload,
   PurchaseResponse,
@@ -9,6 +10,14 @@ import type {
   ShopOrder,
   UpdateShopItemPayload,
 } from "../types";
+
+/**
+ * Lấy danh sách ảnh vật phẩm có sẵn trong public/items
+ */
+export async function getAvailableShopAssets(): Promise<AvailableAsset[]> {
+  const res = await api.get<ApiResponse<AvailableAsset[]>>("/shop/admin/available-assets");
+  return res.data.data;
+}
 
 /**
  * Lấy danh sách sản phẩm hiển thị trong cửa hàng

@@ -45,10 +45,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(lessonsUrl);
   }
 
-  // 4. Các trang công khai: login, tin-tuc, danh sách cấp độ học /lessons
+  // 4. Các trang công khai: login, tin-tuc, fanpage, danh sách cấp độ học /lessons
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/tin-tuc") ||
+    pathname.startsWith("/fanpage") ||
     pathname === "/lessons" ||
     pathname.startsWith("/lessons/")
   ) {

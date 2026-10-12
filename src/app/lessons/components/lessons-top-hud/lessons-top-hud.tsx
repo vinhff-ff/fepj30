@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { GiftOutlined } from "@ant-design/icons";
 import { useAuth } from "@/modules/auth";
 import { DailyRewardModal } from "@/modules/rewards";
@@ -12,6 +13,7 @@ import "./lessons-top-hud.scss";
 const FALLBACK_AVATAR = "/images/chuotuser.png";
 
 export function LessonsTopHud() {
+  const router = useRouter();
   const { user, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -63,10 +65,16 @@ export function LessonsTopHud() {
   }, [user?.id]);
 
   useEffect(() => {
-    const handleOpenReward = () => setIsDailyRewardOpen(true);
+    const handleOpenReward = () => {
+      if (!user) {
+        router.push("/login?next=/lessons");
+        return;
+      }
+      setIsDailyRewardOpen(true);
+    };
     window.addEventListener("open-daily-reward", handleOpenReward);
     return () => window.removeEventListener("open-daily-reward", handleOpenReward);
-  }, []);
+  }, [user, router]);
 
   const avatarSrc = user?.avatarUrl || user?.inventoryAvatarUrl || FALLBACK_AVATAR;
   const username = user?.username || "Khách";

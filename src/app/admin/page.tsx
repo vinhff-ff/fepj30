@@ -37,6 +37,7 @@ function isAdminTab(value: string | undefined): value is AdminTab {
     value === adminTabs.users ||
     value === adminTabs.articles ||
     value === adminTabs.coins ||
+    value === adminTabs.social ||
     value === adminTabs.cart
   );
 }

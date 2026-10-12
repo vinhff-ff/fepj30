@@ -33,8 +33,10 @@ $shadow-ink: rgba(59, 54, 43, 0.45);
 html:has(.levels-page),
 body:has(.levels-page) {
   margin: 0;
-  // Khóa cứng chiều cao 1 màn hình và cấm cuộn
+  // Khóa cứng chiều cao 1 màn hình và cấm cuộn - dùng dvh để khớp hoàn hảo với Safari trên iPhone
   height: 100vh;
+  height: 100dvh;
+  min-height: -webkit-fill-available;
   overflow: hidden;
   background:
     repeating-linear-gradient(90deg, transparent 0 46px, rgba(120, 90, 60, .10) 46px 48px, transparent 48px 120px),
@@ -91,11 +93,14 @@ body:has(.levels-page) {
   position: relative;
   width: 100%;
   height: 100vh;
+  height: 100dvh;
+  min-height: -webkit-fill-available;
   max-width: 100%;
   margin: 0 auto;
-  // Khoảng cách an toàn: tránh Top HUD ở trên và Bottom Dock ở dưới
-  padding-top: calc(64px + env(safe-area-inset-top, 0px));
-  padding-bottom: calc(115px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  // Khoảng cách an toàn: tránh Top HUD ở trên, Bottom Dock ở dưới, và tai thỏ 2 bên khi xoay ngang
+  padding-top: calc(56px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 

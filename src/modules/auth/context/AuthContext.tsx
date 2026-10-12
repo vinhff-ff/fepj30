@@ -44,7 +44,7 @@ function getCookie(name: string): string | null {
 }
 
 function deleteCookie(name: string) {
-  document.cookie = `${name}=; path=/; max-age=0`;
+  document.cookie = `${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 }
 
 function clearAllAuthCookies() {
@@ -97,10 +97,11 @@ function AuthProvider({ children }: { children: ReactNode }) {
         } catch {
           clearAllAuthCookies();
         }
-      } else {
-        clearAllAuthCookies();
       }
 
+      clearAllAuthCookies();
+      setToken(null);
+      setUser(null);
       setIsLoading(false);
     }
 

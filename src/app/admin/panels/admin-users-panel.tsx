@@ -18,6 +18,7 @@ import type { ColumnsType } from "antd/es/table";
 import {
   DeleteOutlined,
   EditOutlined,
+  EyeOutlined,
   PlusOutlined,
   SearchOutlined,
   UserOutlined,
@@ -51,6 +52,9 @@ export function AdminUsersPanel({ currentUserId }: AdminUsersPanelProps) {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form] = Form.useForm();
+
+  // Modal chỉ xem chi tiết tài khoản
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
 
   // Load data
   async function loadData(page = meta.page, searchKw = keyword) {
@@ -166,14 +170,14 @@ export function AdminUsersPanel({ currentUserId }: AdminUsersPanelProps) {
         const isSelf = record.id === currentUserId;
         return (
           <Space>
-            <Avatar style={{ backgroundColor: record.role === "ADMIN" ? "#ef4444" : "#3b82f6" }}>
+            <Avatar style={{ backgroundColor: "#2563eb" }}>
               {username.charAt(0).toUpperCase()}
             </Avatar>
             <div>
               <div style={{ fontWeight: 700, fontSize: 14 }}>
                 {username}
                 {isSelf && (
-                  <Tag color="cyan" style={{ marginLeft: 6, fontSize: 11 }}>
+                  <Tag style={{ marginLeft: 6, fontSize: 11 }}>
                     Bạn
                   </Tag>
                 )}
@@ -188,12 +192,12 @@ export function AdminUsersPanel({ currentUserId }: AdminUsersPanelProps) {
       title: "Giới tính",
       dataIndex: "gender",
       key: "gender",
-      width: 130,
+      width: 120,
       render: (gender: string | null) => {
-        if (gender === "MALE") return <Tag color="blue">Nam</Tag>;
-        if (gender === "FEMALE") return <Tag color="magenta">Nữ</Tag>;
-        if (gender === "OTHER") return <Tag color="orange">Khác</Tag>;
-        return <Tag color="default">Chưa rõ</Tag>;
+        if (gender === "MALE") return <Tag>Nam</Tag>;
+        if (gender === "FEMALE") return <Tag>Nữ</Tag>;
+        if (gender === "OTHER") return <Tag>Khác</Tag>;
+        return <Tag>Chưa rõ</Tag>;
       },
     },
     {
@@ -203,21 +207,19 @@ export function AdminUsersPanel({ currentUserId }: AdminUsersPanelProps) {
       width: 130,
       render: (role: string) =>
         role === "ADMIN" ? (
-          <Tag color="red" style={{ fontWeight: 700 }}>
-            QUẢN TRỊ VIÊN
-          </Tag>
+          <Tag>Admin</Tag>
         ) : (
-          <Tag color="green">THÀNH VIÊN</Tag>
+          <Tag>Thành viên</Tag>
         ),
     },
     {
-      title: "Số xu tích lũy",
+      title: "Số xu",
       dataIndex: "coins",
       key: "coins",
-      width: 140,
+      width: 130,
       sorter: (a, b) => (a.coins ?? 0) - (b.coins ?? 0),
       render: (coins: number) => (
-        <span style={{ fontWeight: 800, color: "#b45309" }}>🪙 {(coins ?? 0).toLocaleString("vi-VN")} Xu</span>
+        <span>{(coins ?? 0).toLocaleString("vi-VN")} xu</span>
       ),
     },
     {
@@ -234,12 +236,19 @@ export function AdminUsersPanel({ currentUserId }: AdminUsersPanelProps) {
     {
       title: "Thao tác",
       key: "actions",
-      width: 150,
+      width: 200,
       fixed: "right",
       render: (_, record) => {
         const isSelf = record.id === currentUserId;
         return (
           <Space size="small">
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => setViewingUser(record)}
+            >
+              Xem
+            </Button>
             <Button
               type="primary"
               ghost
@@ -280,11 +289,8 @@ export function AdminUsersPanel({ currentUserId }: AdminUsersPanelProps) {
       <div className="admin-table-container">
         <div className="admin-table-container__header">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <h3 className="admin-table-container__title">
-              Danh sách tài khoản ({meta.total})
-            </h3>
             <Input
-              placeholder="Tìm kiếm tài khoản..."
+              placeholder="Tìm tài khoản..."
               prefix={<SearchOutlined />}
               value={keywordInput}
               onChange={(e) => setKeywordInput(e.target.value)}
@@ -292,7 +298,7 @@ export function AdminUsersPanel({ currentUserId }: AdminUsersPanelProps) {
                 setMeta((prev) => ({ ...prev, page: 1 }));
                 setKeyword(keywordInput.trim());
               }}
-              style={{ width: 220 }}
+              style={{ width: 320 }}
               allowClear
             />
             <Button
@@ -301,7 +307,7 @@ export function AdminUsersPanel({ currentUserId }: AdminUsersPanelProps) {
                 setKeyword(keywordInput.trim());
               }}
             >
-              Tìm kiếm
+              Tìm
             </Button>
           </div>
 
@@ -313,7 +319,7 @@ export function AdminUsersPanel({ currentUserId }: AdminUsersPanelProps) {
               onClick={handleOpenCreateModal}
               size="middle"
             >
-              Thêm người dùng mới
+              Thêm
             </Button>
           </div>
         </div>
@@ -337,12 +343,12 @@ export function AdminUsersPanel({ currentUserId }: AdminUsersPanelProps) {
 
       {/* 3. MODAL ANTD: THÊM MỚI / CHỈNH SỬA TÀI KHOẢN */}
       <Modal
-        title={editingUser ? `Chỉnh sửa tài khoản: ${editingUser.username}` : "Thêm mới tài khoản người dùng"}
+        title={editingUser ? "Sửa tài khoản" : "Thêm tài khoản"}
         open={isModalOpen}
         onOk={handleModalSubmit}
         onCancel={() => setIsModalOpen(false)}
         confirmLoading={isSubmitting}
-        okText={editingUser ? "Cập nhật" : "Tạo tài khoản"}
+        okText="Lưu"
         cancelText="Hủy"
         width={500}
         destroyOnClose
@@ -403,6 +409,41 @@ export function AdminUsersPanel({ currentUserId }: AdminUsersPanelProps) {
             </Form.Item>
           </div>
         </Form>
+      </Modal>
+
+      {/* MODAL CHỈ XEM NỘI DUNG TÀI KHOẢN (READ-ONLY) */}
+      <Modal
+        title="Chi tiết tài khoản"
+        open={Boolean(viewingUser)}
+        onCancel={() => setViewingUser(null)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setViewingUser(null)}>
+            Đóng
+          </Button>,
+        ]}
+        width={520}
+      >
+        {viewingUser && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700 }}>
+                {viewingUser.username.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{viewingUser.username}</div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>ID: {viewingUser.id}</div>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: 12, background: "#f8fafc", borderRadius: 6, border: "1px solid #e2e8f0" }}>
+              <div><span style={{ fontSize: 12, color: "#94a3b8" }}>Chuỗi ngày:</span> <div style={{ fontSize: 13.5, fontWeight: 500 }}>{viewingUser.streak ?? 0} ngày</div></div>
+              <div><span style={{ fontSize: 12, color: "#94a3b8" }}>Vai trò:</span> <div style={{ fontSize: 13.5, fontWeight: 500 }}><Tag>{viewingUser.role}</Tag></div></div>
+              <div><span style={{ fontSize: 12, color: "#94a3b8" }}>Số xu:</span> <div style={{ fontSize: 13.5, fontWeight: 600, color: "#2563eb" }}>{(viewingUser.coins ?? 0).toLocaleString("vi-VN")} xu</div></div>
+              <div><span style={{ fontSize: 12, color: "#94a3b8" }}>Giới tính:</span> <div style={{ fontSize: 13.5, fontWeight: 500 }}>{viewingUser.gender || "Chưa rõ"}</div></div>
+              <div style={{ gridColumn: "span 2" }}><span style={{ fontSize: 12, color: "#94a3b8" }}>Ngày tham gia:</span> <div style={{ fontSize: 13, color: "#475569" }}>{new Date(viewingUser.createdAt).toLocaleString("vi-VN")}</div></div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

@@ -19,8 +19,10 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
+  CheckCircleFilled,
   DeleteOutlined,
   EditOutlined,
+  EyeOutlined,
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
@@ -31,9 +33,11 @@ import {
   createShopItem,
   deleteShopItem,
   getAdminOrders,
+  getAvailableShopAssets,
   getShopItems,
   updateOrderStatus,
   updateShopItem,
+  type AvailableAsset,
   type CreateShopItemPayload,
   type ShopItem,
   type ShopOrder,
@@ -62,11 +66,19 @@ export function AdminShopPanel() {
   const [isLoadingItems, setIsLoadingItems] = useState(true);
   const [itemSearch, setItemSearch] = useState("");
 
+  // Danh sách ảnh trang bị có sẵn trong thư mục public/items
+  const [availableAssets, setAvailableAssets] = useState<AvailableAsset[]>([]);
+  const [isLoadingAssets, setIsLoadingAssets] = useState(false);
+  const [selectedAssetUrl, setSelectedAssetUrl] = useState<string>("");
+
   // Modal thêm / sửa sản phẩm
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShopItem | null>(null);
   const [isSubmittingItem, setIsSubmittingItem] = useState(false);
   const [form] = Form.useForm();
+
+  // Modal chỉ xem chi tiết sản phẩm
+  const [viewingItem, setViewingItem] = useState<ShopItem | null>(null);
 
   // State đơn hàng
   const [orders, setOrders] = useState<ShopOrder[]>([]);
@@ -85,6 +97,19 @@ export function AdminShopPanel() {
       message.error("Không thể tải danh sách sản phẩm.");
     } finally {
       setIsLoadingItems(false);
+    }
+  }
+
+  // Load danh sách ảnh có sẵn trong folder public/items
+  async function loadAssets() {
+    try {
+      setIsLoadingAssets(true);
+      const assets = await getAvailableShopAssets();
+      setAvailableAssets(assets);
+    } catch {
+      // fallback
+    } finally {
+      setIsLoadingAssets(false);
     }
   }
 
@@ -107,6 +132,7 @@ export function AdminShopPanel() {
   useEffect(() => {
     void loadItems();
     void loadOrders();
+    void loadAssets();
   }, []);
 
   useEffect(() => {
@@ -126,12 +152,30 @@ export function AdminShopPanel() {
     );
   }, [items, itemSearch]);
 
+  // Chọn ảnh có sẵn trong thư mục /items
+  const handleSelectAsset = (asset: AvailableAsset) => {
+    setSelectedAssetUrl(asset.url);
+    form.setFieldValue("imageUrl", asset.url);
+    // Nếu đang tạo mới thì tự động điền tên gợi ý của món đồ
+    if (!editingItem) {
+      form.setFieldValue("name", asset.name);
+    }
+  };
+
   // Mở modal tạo mới
   const handleOpenCreateModal = () => {
     setEditingItem(null);
     form.resetFields();
+    void loadAssets();
+
+    const firstAsset = availableAssets[0];
+    const initialUrl = firstAsset?.url || "/items/mask_matla.png";
+    const initialName = firstAsset?.name || "";
+
+    setSelectedAssetUrl(initialUrl);
     form.setFieldsValue({
-      imageUrl: "/images/news-steam-lab.jpg",
+      name: initialName,
+      imageUrl: initialUrl,
       coinPrice: 10,
       isSpecial: false,
       stock: undefined,
@@ -143,6 +187,8 @@ export function AdminShopPanel() {
   const handleOpenEditModal = (item: ShopItem) => {
     setEditingItem(item);
     form.resetFields();
+    void loadAssets();
+    setSelectedAssetUrl(item.imageUrl);
     form.setFieldsValue({
       name: item.name,
       description: item.description || "",
@@ -260,26 +306,24 @@ export function AdminShopPanel() {
       width: 120,
       sorter: (a, b) => a.coinPrice - b.coinPrice,
       render: (price: number) => (
-        <span style={{ fontWeight: 800, color: "#b45309" }}>🪙 {price.toLocaleString("vi-VN")} Xu</span>
+        <span>{price.toLocaleString("vi-VN")} xu</span>
       ),
     },
     {
       title: "Phân loại",
       dataIndex: "isSpecial",
       key: "isSpecial",
-      width: 140,
+      width: 130,
       filters: [
-        { text: "⭐ ĐẶC BIỆT", value: true },
+        { text: "Đặc biệt", value: true },
         { text: "Thường", value: false },
       ],
       onFilter: (value, record) => record.isSpecial === value,
       render: (isSpecial: boolean) =>
         isSpecial ? (
-          <Tag color="gold" style={{ fontWeight: 700 }}>
-            ⭐ ĐẶC BIỆT
-          </Tag>
+          <Tag>Đặc biệt</Tag>
         ) : (
-          <Tag color="default">Vật phẩm thường</Tag>
+          <Tag>Thường</Tag>
         ),
     },
     {
@@ -289,18 +333,25 @@ export function AdminShopPanel() {
       width: 110,
       render: (stock: number | null) =>
         stock === null ? (
-          <Tag color="blue">Vô hạn</Tag>
+          <span>Vô hạn</span>
         ) : (
-          <Tag color={stock > 0 ? "green" : "red"}>{stock.toLocaleString("vi-VN")}</Tag>
+          <span>{stock.toLocaleString("vi-VN")}</span>
         ),
     },
     {
       title: "Thao tác",
       key: "actions",
-      width: 140,
+      width: 200,
       fixed: "right",
       render: (_, record) => (
         <Space size="small">
+          <Button
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => setViewingItem(record)}
+          >
+            Xem
+          </Button>
           <Button
             type="primary"
             ghost
@@ -363,13 +414,13 @@ export function AdminShopPanel() {
             <div style={{ fontWeight: 700 }}>
               {record.item?.name || "Vật phẩm"}
               {record.isSpecial && (
-                <Tag color="gold" style={{ marginLeft: 6, fontSize: 10 }}>
-                  ⭐ ĐẶC BIỆT
+                <Tag style={{ marginLeft: 6, fontSize: 10 }}>
+                  Đặc biệt
                 </Tag>
               )}
             </div>
             {record.note && (
-              <div style={{ fontSize: 12, color: "#64748b", fontStyle: "italic", marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
                 Ghi chú: {record.note}
               </div>
             )}
@@ -383,23 +434,23 @@ export function AdminShopPanel() {
       key: "coinPrice",
       width: 100,
       render: (price: number) => (
-        <span style={{ fontWeight: 800, color: "#b45309" }}>🪙 {price}</span>
+        <span>{price} xu</span>
       ),
     },
     {
-      title: "Thông tin liên lạc đã gửi",
+      title: "Thông tin liên lạc",
       dataIndex: "contactInfo",
       key: "contactInfo",
       width: 250,
       render: (contact: string | null) =>
         contact ? (
-          <div style={{ background: "#fefce8", border: "1px solid #facc15", padding: "4px 8px", borderRadius: 4 }}>
-            <Text copyable style={{ fontSize: 13, fontWeight: 700, color: "#854d0e" }}>
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "4px 8px", borderRadius: 4 }}>
+            <Text copyable style={{ fontSize: 13, fontWeight: 600 }}>
               {contact}
             </Text>
           </div>
         ) : (
-          <span style={{ color: "#94a3b8" }}>— (Không có)</span>
+          <span style={{ color: "#94a3b8" }}>—</span>
         ),
     },
     {
@@ -410,22 +461,22 @@ export function AdminShopPanel() {
       render: (status: string) => {
         switch (status) {
           case "PENDING":
-            return <Tag color="warning">Chờ xử lý</Tag>;
+            return <Tag>Chờ xử lý</Tag>;
           case "PROCESSING":
-            return <Tag color="processing">Đang xử lý</Tag>;
+            return <Tag>Đang xử lý</Tag>;
           case "COMPLETED":
-            return <Tag color="success">Đã hoàn thành</Tag>;
+            return <Tag>Đã hoàn thành</Tag>;
           case "CANCELLED":
-            return <Tag color="error">Đã hủy</Tag>;
+            return <Tag>Đã hủy</Tag>;
           default:
             return <Tag>{status}</Tag>;
         }
       },
     },
     {
-      title: "Thao tác xử lý",
+      title: "Thao tác",
       key: "action",
-      width: 170,
+      width: 160,
       fixed: "right",
       render: (_, record) => (
         <Select
@@ -455,14 +506,14 @@ export function AdminShopPanel() {
           icon={<ShoppingOutlined />}
           onClick={() => setSubTab("items")}
         >
-          Danh sách sản phẩm ({items.length})
+          Sản phẩm
         </Button>
         <Button
           type={subTab === "orders" ? "primary" : "default"}
           icon={<InboxOutlined />}
           onClick={() => setSubTab("orders")}
         >
-          Đơn hàng của người dùng ({orders.length})
+          Đơn hàng
         </Button>
       </div>
 
@@ -473,13 +524,12 @@ export function AdminShopPanel() {
         <div className="admin-table-container">
           <div className="admin-table-container__header">
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <h3 className="admin-table-container__title">Quản lý vật phẩm cửa hàng ({items.length})</h3>
               <Input
-                placeholder="Tìm kiếm sản phẩm..."
+                placeholder="Tìm sản phẩm..."
                 prefix={<SearchOutlined />}
                 value={itemSearch}
                 onChange={(e) => setItemSearch(e.target.value)}
-                style={{ width: 220 }}
+                style={{ width: 320 }}
                 allowClear
               />
             </div>
@@ -492,7 +542,7 @@ export function AdminShopPanel() {
                 onClick={handleOpenCreateModal}
                 size="middle"
               >
-                Thêm mới sản phẩm
+                Thêm
               </Button>
             </div>
           </div>
@@ -521,7 +571,6 @@ export function AdminShopPanel() {
         <div className="admin-table-container">
           <div className="admin-table-container__header">
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <h3 className="admin-table-container__title">Đơn hàng mua sắm ({orders.length})</h3>
               <Select
                 value={orderStatusFilter}
                 onChange={setOrderStatusFilter}
@@ -535,12 +584,12 @@ export function AdminShopPanel() {
                 ]}
               />
               <Input
-                placeholder="Tìm kiếm người mua..."
+                placeholder="Tìm người mua..."
                 prefix={<SearchOutlined />}
                 value={orderSearch}
                 onChange={(e) => setOrderSearch(e.target.value)}
                 onPressEnter={loadOrders}
-                style={{ width: 200 }}
+                style={{ width: 320 }}
                 allowClear
               />
             </div>
@@ -573,17 +622,124 @@ export function AdminShopPanel() {
       {/* MODAL ANTD: THÊM MỚI / CHỈNH SỬA SẢN PHẨM                */}
       {/* ======================================================== */}
       <Modal
-        title={editingItem ? `Chỉnh sửa sản phẩm: ${editingItem.name}` : "Thêm mới sản phẩm vào cửa hàng"}
+        title={editingItem ? "Sửa sản phẩm" : "Thêm sản phẩm"}
         open={isItemModalOpen}
         onOk={handleModalSubmit}
         onCancel={() => setIsItemModalOpen(false)}
         confirmLoading={isSubmittingItem}
-        okText={editingItem ? "Cập nhật" : "Tạo mới"}
+        okText="Lưu"
         cancelText="Hủy"
-        width={620}
+        width={680}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
+          {/* 1. BỘ CHỌN ẢNH CÓ SẴN TRONG THƯ MỤC /ITEMS */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>
+                Chọn ảnh trang bị có sẵn (từ thư mục <code style={{ color: "#2563eb", background: "#eff6ff", padding: "2px 6px", borderRadius: 4 }}>public/items</code>):
+              </span>
+              <Button size="small" type="link" icon={<ReloadOutlined />} onClick={loadAssets} loading={isLoadingAssets}>
+                Quét lại ảnh
+              </Button>
+            </div>
+
+            {availableAssets.length === 0 ? (
+              <div style={{ padding: "16px", background: "#f8fafc", borderRadius: 8, border: "1px dashed #cbd5e1", textAlign: "center", color: "#64748b" }}>
+                Đang quét hoặc chưa có file ảnh nào trong thư mục <code>public/items</code>.
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
+                  gap: 10,
+                  maxHeight: 230,
+                  overflowY: "auto",
+                  padding: 8,
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 8,
+                  background: "#f8fafc",
+                }}
+              >
+                {availableAssets.map((asset) => {
+                  const isSelected = selectedAssetUrl === asset.url;
+                  return (
+                    <div
+                      key={asset.url}
+                      onClick={() => handleSelectAsset(asset)}
+                      style={{
+                        position: "relative",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        padding: "8px 6px",
+                        borderRadius: 8,
+                        background: "#fff",
+                        border: isSelected ? "2px solid #22c55e" : "1px solid #e2e8f0",
+                        boxShadow: isSelected ? "0 2px 8px rgba(34, 197, 94, 0.25)" : "none",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                        textAlign: "center",
+                      }}
+                    >
+                      {isSelected && (
+                        <CheckCircleFilled
+                          style={{
+                            position: "absolute",
+                            top: 4,
+                            right: 4,
+                            color: "#22c55e",
+                            fontSize: 16,
+                            background: "#fff",
+                            borderRadius: "50%",
+                          }}
+                        />
+                      )}
+                      <div style={{ width: 52, height: 52, position: "relative", marginBottom: 6 }}>
+                        <Image
+                          src={asset.url}
+                          alt={asset.name}
+                          fill
+                          sizes="52px"
+                          style={{ objectFit: "contain" }}
+                          unoptimized
+                        />
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: isSelected ? "#15803d" : "#334155",
+                          lineHeight: 1.2,
+                          maxWidth: "100%",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={asset.name}
+                      >
+                        {asset.name}
+                      </div>
+                      <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2, fontFamily: "monospace" }}>
+                        {asset.filename}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Input imageUrl ẩn - tự động bind khi chọn ảnh */}
+            <Form.Item
+              name="imageUrl"
+              rules={[{ required: true, message: "Vui lòng chọn một ảnh trang bị ở trên" }]}
+              hidden
+            >
+              <Input />
+            </Form.Item>
+          </div>
+
           <Form.Item
             name="name"
             label="Tên sản phẩm"
@@ -591,33 +747,6 @@ export function AdminShopPanel() {
           >
             <Input placeholder="Ví dụ: Kính Tri thức STEAM" />
           </Form.Item>
-
-          <Form.Item
-            name="imageUrl"
-            label="Đường dẫn ảnh sản phẩm (URL)"
-            rules={[{ required: true, message: "Vui lòng nhập đường dẫn ảnh" }]}
-          >
-            <Input placeholder="/items/... hoặc https://..." />
-          </Form.Item>
-
-          {/* Gợi ý ảnh có sẵn */}
-          <div style={{ marginBottom: 16 }}>
-            <span style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 6 }}>
-              Ảnh mẫu hệ thống có sẵn (nhấp để chọn):
-            </span>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {SUGGESTED_IMAGES.map((img) => (
-                <Tag
-                  key={img.url}
-                  color="blue"
-                  style={{ cursor: "pointer", userSelect: "none" }}
-                  onClick={() => form.setFieldValue("imageUrl", img.url)}
-                >
-                  {img.label}
-                </Tag>
-              ))}
-            </div>
-          </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Form.Item
@@ -639,17 +768,62 @@ export function AdminShopPanel() {
 
           <Form.Item
             name="isSpecial"
-            label="Đánh dấu vật phẩm ĐẶC BIỆT"
+            label="Đặc biệt"
             valuePropName="checked"
-            extra="Vật phẩm đặc biệt yêu cầu người mua cung cấp thông tin liên lạc và gửi thông báo lên Admin để xử lý."
           >
-            <Switch checkedChildren="⭐ ĐẶC BIỆT" unCheckedChildren="Thường" />
+            <Switch checkedChildren="Đặc biệt" unCheckedChildren="Thường" />
           </Form.Item>
 
           <Form.Item name="description" label="Mô tả sản phẩm">
             <Input.TextArea rows={3} placeholder="Mô tả tính năng, quà tặng hoặc hướng dẫn nhận..." />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* MODAL CHỈ XEM NỘI DUNG SẢN PHẨM (READ-ONLY) */}
+      <Modal
+        title="Chi tiết sản phẩm"
+        open={Boolean(viewingItem)}
+        onCancel={() => setViewingItem(null)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setViewingItem(null)}>
+            Đóng
+          </Button>,
+        ]}
+        width={560}
+      >
+        {viewingItem && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
+            {viewingItem.imageUrl && (
+              <div style={{ width: "100%", height: 180, borderRadius: 6, overflow: "hidden", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc" }}>
+                <img src={viewingItem.imageUrl} alt={viewingItem.name} style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
+              </div>
+            )}
+            <div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: "#0f172a" }}>{viewingItem.name}</div>
+              <div style={{ fontSize: 14, color: "#2563eb", fontWeight: 600, marginTop: 4 }}>
+                {viewingItem.coinPrice.toLocaleString("vi-VN")} xu
+              </div>
+              <div style={{ fontSize: 12.5, color: "#64748b", marginTop: 4, display: "flex", gap: 6, alignItems: "center" }}>
+                {viewingItem.isSpecial && <Tag color="gold">Đặc biệt</Tag>}
+                {viewingItem.stock !== null && viewingItem.stock !== undefined && (
+                  <span>Tồn kho: {viewingItem.stock}</span>
+                )}
+                <Tag color={viewingItem.isActive ? "green" : "default"}>
+                  {viewingItem.isActive ? "Đang bán" : "Tạm ngưng"}
+                </Tag>
+              </div>
+            </div>
+            {viewingItem.description && (
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#334155", marginBottom: 4 }}>Mô tả:</div>
+                <div style={{ padding: 12, background: "#f8fafc", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13.5, color: "#334155" }}>
+                  {viewingItem.description}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );

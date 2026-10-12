@@ -31,10 +31,14 @@ export const ExitFullscreenButton: React.FC<ExitFullscreenButtonProps> = ({
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    window.addEventListener("fullscreenchange", handleFullscreenChange);
+    window.addEventListener("fullscreen-toggle", handleFullscreenChange);
 
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
       document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      window.removeEventListener("fullscreenchange", handleFullscreenChange);
+      window.removeEventListener("fullscreen-toggle", handleFullscreenChange);
     };
   }, []);
 

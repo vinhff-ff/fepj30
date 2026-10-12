@@ -85,6 +85,9 @@ function CameraPreview({ equippedItems, apiRef }: CameraPreviewProps) {
       setDetail("");
 
       try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("Trình duyệt chỉ cho phép bật Camera qua HTTPS hoặc localhost.");
+        }
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
           audio: false,

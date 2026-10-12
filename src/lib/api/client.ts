@@ -18,7 +18,7 @@ function setCookie(name: string, value: string, maxAgeSeconds: number) {
 
 function deleteCookie(name: string) {
   if (typeof document === "undefined") return;
-  document.cookie = `${name}=; path=/; max-age=0`;
+  document.cookie = `${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 }
 
 function clearAuthCookies() {
@@ -27,8 +27,14 @@ function clearAuthCookies() {
   deleteCookie(USER_COOKIE);
 }
 
+const isServer = typeof window === "undefined";
+const internalApiUrl = process.env.INTERNAL_API_URL ?? "http://127.0.0.1:8080";
+const defaultBaseUrl = isServer
+  ? `${internalApiUrl.replace(/\/+$/, "")}/api`
+  : (env.apiUrl || "/api");
+
 const api = axios.create({
-  baseURL: env.apiUrl,
+  baseURL: defaultBaseUrl,
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -37,10 +43,19 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  if (typeof window === "undefined") {
+    if (!config.baseURL || config.baseURL.startsWith("/")) {
+      const serverBase = process.env.INTERNAL_API_URL ?? "http://127.0.0.1:8080";
+      config.baseURL = `${serverBase.replace(/\/+$/, "")}${config.baseURL || "/api"}`;
+    }
+  }
+
   const token = getCookie(TOKEN_COOKIE);
   if (token) {
     config.headers = config.headers ?? {};
-    config.headers.Authorization = `Bearer ${token}`;
+    if (!config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });

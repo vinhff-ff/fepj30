@@ -21,18 +21,17 @@ async function ProfilePage() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
-  if (!token) {
-    redirect("/");
+  let initialUser: User | null = null;
+  if (token) {
+    try {
+      initialUser = await getMe(token);
+    } catch {
+      // Không ném redirect ở server để tránh vòng lặp chuyển hướng vô tận (redirect loop).
+      // AuthRouteGuard và AuthContext ở client sẽ tự làm mới token hoặc điều hướng an toàn.
+    }
   }
 
-  let user: User;
-  try {
-    user = await getMe(token);
-  } catch {
-    redirect("/");
-  }
-
-  return <ProfileView user={user} />;
+  return <ProfileView initialUser={initialUser} />;
 }
 
 export default ProfilePage;

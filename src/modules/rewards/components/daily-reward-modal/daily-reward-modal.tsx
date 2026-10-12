@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/modules/auth";
 import { claimDailyReward, getDailyRewardStatus } from "../../services/reward.service";
@@ -26,7 +27,11 @@ export function DailyRewardModal({
   const userId = user?.id;
 
   useEffect(() => {
-    if (!isOpen || !userId) return;
+    if (!isOpen) return;
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
 
     let isMounted = true;
     async function loadStatus() {
@@ -124,7 +129,26 @@ export function DailyRewardModal({
         {/* THÔNG BÁO LỖI (NẾU CÓ) */}
         {error && <div className="daily-reward-modal__error">{error}</div>}
 
-        {isLoading ? (
+        {!user ? (
+          <div className="daily-reward-modal__disabled-box">
+            <span className="daily-reward-modal__lock-icon">🔒</span>
+            <p>Vui lòng đăng nhập để tham gia nhận xu điểm danh hàng ngày!</p>
+            <Link
+              href="/login?next=/lessons"
+              className="daily-reward-claim-btn"
+              style={{
+                textDecoration: "none",
+                display: "inline-block",
+                marginTop: 14,
+                padding: "10px 24px",
+                textAlign: "center",
+              }}
+              onClick={onClose}
+            >
+              ĐĂNG NHẬP NGAY
+            </Link>
+          </div>
+        ) : isLoading ? (
           <div className="daily-reward-modal__loading">
             <span className="daily-reward-modal__spinner" />
             <p>Đang tải thông tin kho báu...</p>

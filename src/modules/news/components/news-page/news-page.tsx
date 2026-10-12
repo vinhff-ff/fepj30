@@ -127,12 +127,13 @@ function NewsPage({ articles = newsArticles }: NewsPageProps) {
               >
                 <div className="newspaper-lead-card__media">
                   <Image
-                    src={leadArticle.coverImage ?? "/images/news-steam-lab.jpg"}
+                    src={leadArticle.coverImage ?? "/images/bgm23.jpg"}
                     alt={leadArticle.title}
                     fill
                     sizes="(max-width: 1024px) 100vw, 65vw"
                     className="newspaper-lead-card__image"
                     priority
+                    unoptimized
                   />
                 </div>
 
@@ -182,6 +183,7 @@ function NewsPage({ articles = newsArticles }: NewsPageProps) {
                         fill
                         sizes="120px"
                         className="newspaper-sidebar-item__img"
+                        unoptimized
                       />
                     </div>
 
@@ -225,6 +227,7 @@ function NewsPage({ articles = newsArticles }: NewsPageProps) {
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="newspaper-card__image"
+                      unoptimized
                     />
                   </div>
 
@@ -266,6 +269,7 @@ function NewsPage({ articles = newsArticles }: NewsPageProps) {
                   fill
                   sizes="780px"
                   className="article-modal-cover__img"
+                  unoptimized
                 />
               </div>
             )}

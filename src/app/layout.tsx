@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { siteConfig } from "@/config";
 import {
@@ -12,6 +12,15 @@ import { Providers } from "@/app/providers";
 import { baloo2, lora, zahra } from "@/styles/fonts";
 import "@/styles/globals.scss";
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#1c1815",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -20,6 +29,11 @@ export const metadata: Metadata = {
   },
   description: siteConfig.seoText.home.description,
   applicationName: siteConfig.name,
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: siteConfig.name,
+  },
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",

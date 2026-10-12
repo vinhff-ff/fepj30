@@ -19,11 +19,8 @@ const rightMenuItems: MenuItem[] = [
   },
   {
     label: "HỖ TRỢ",
-    href: "/ho-tro",
-    children: [
-      { label: "Hỗ trợ kỹ thuật", href: "/ho-tro/ky-thuat" },
-      { label: "Liên hệ quản trị", href: "/ho-tro/lien-he" },
-    ],
+    href: "https://www.facebook.com/profile.php?id=61595040895107",
+    isExternal: true,
   },
 ];
 
